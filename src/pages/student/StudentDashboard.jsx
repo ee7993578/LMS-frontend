@@ -1,0 +1,102 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Flame, Clock3, Armchair, Wallet, ArrowRight, Trophy } from "lucide-react";
+import toast from "react-hot-toast";
+import StatCard from "../../components/ui/StatCard";
+import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
+import { TrendLineChart } from "../../components/charts/Charts";
+import Button from "../../components/ui/Button";
+import { SkeletonCard } from "../../components/ui/Feedback";
+import { getMonthAttendance } from "../../api/attendanceApi";
+import { formatMinutesToHrs } from "../../utils/format";
+
+export default function StudentDashboard() {
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMonthAttendance()
+      .then(({ data }) => setRecords(data || []))
+      .catch(() => toast.error("Couldn't load your attendance — check your library admin has set up your account", { id: "student-dash-error" }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const totalMinutesMonth = records.reduce((sum, r) => sum + (r.totalStudyMinutes || 0), 0);
+  const sessionsThisMonth = records.length;
+  const todayRecord = records.find((r) => {
+    const d = new Date(r.attendanceDate);
+    const today = new Date();
+    return d.toDateString() === today.toDateString();
+  });
+
+  // Simple streak: count consecutive days (from most recent) with a record present
+  const streak = (() => {
+    const dates = new Set(records.map((r) => r.attendanceDate));
+    let count = 0;
+    let cursor = new Date();
+    while (dates.has(cursor.toISOString().split("T")[0])) {
+      count++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return count;
+  })();
+
+  const trend = records.slice(-7).map((r) => ({
+    label: new Date(r.attendanceDate).toLocaleDateString("en-IN", { weekday: "short" }),
+    value: Math.round((r.totalStudyMinutes || 0) / 60),
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-amber-400/20 bg-ink-850 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative overflow-hidden">
+        <div className="absolute inset-0 lamp-glow" />
+        <div className="relative z-10">
+          <p className="text-sm text-ink-400">Welcome back</p>
+          <h2 className="font-display text-2xl text-ink-50 mt-1">
+            {todayRecord?.attendanceStatus === "IN" ? "You're currently studying" : "Ready to start your session?"}
+          </h2>
+        </div>
+        <Link to="/student/punch" className="relative z-10">
+          <Button size="lg">Go to punch in/out <ArrowRight size={16} /></Button>
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Study streak" value={streak} suffix=" days" icon={<Flame size={18} />} tone="amber" />
+          <StatCard label="This month" value={formatMinutesToHrs(totalMinutesMonth)} icon={<Clock3 size={18} />} tone="teal" />
+          <StatCard label="Sessions" value={sessionsThisMonth} icon={<Armchair size={18} />} tone="info" />
+          <StatCard label="Fee status" value="On track" icon={<Wallet size={18} />} tone="amber" />
+        </div>
+      )}
+
+      <div className="grid lg:grid-cols-3 gap-5">
+        <Card className="lg:col-span-2">
+          <CardHeader><CardTitle>Study hours — last 7 sessions</CardTitle></CardHeader>
+          <CardBody>
+            {trend.length > 0 ? (
+              <TrendLineChart data={trend} color="#f5a83c" />
+            ) : (
+              <p className="text-sm text-ink-400 text-center py-16">No sessions yet — punch in to start tracking.</p>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Leaderboard</CardTitle>
+            <Trophy size={16} className="text-amber-400" />
+          </CardHeader>
+          <CardBody>
+            <p className="text-sm text-ink-400 mb-3">See how your study hours compare with others at your library.</p>
+            <Link to="/student/leaderboard">
+              <Button variant="secondary" className="w-full">View leaderboard</Button>
+            </Link>
+          </CardBody>
+        </Card>
+      </div>
+    </div>
+  );
+}
