@@ -6,6 +6,7 @@ import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card"
 import Button from "../../components/ui/Button";
 import { punch, punchWithQR, getMonthAttendance } from "../../api/attendanceApi";
 import { formatMinutesToHrs } from "../../utils/format";
+import api from "../../api/axios";
 
 function FocusRing({ active, elapsedSeconds }) {
   const hours = Math.floor(elapsedSeconds / 3600);
@@ -16,10 +17,10 @@ function FocusRing({ active, elapsedSeconds }) {
   return (
     <div className="relative h-56 w-56 mx-auto">
       <svg viewBox="0 0 200 200" className="h-full w-full -rotate-90">
-        <circle cx="100" cy="100" r="88" fill="none" stroke="#1f2433" strokeWidth="10" />
+        <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(99,102,241,0.12)" strokeWidth="10" />
         <motion.circle
           cx="100" cy="100" r="88" fill="none"
-          stroke={active ? "#f5a83c" : "#3b4258"}
+          stroke={active ? "#6366f1" : "#475569"}
           strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={2 * Math.PI * 88}
@@ -74,9 +75,15 @@ export default function PunchInOut() {
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [attendanceMode, setAttendanceMode] = useState("BOTH"); // NORMAL | QR_CODE | BOTH
   const intervalRef = useRef(null);
 
   useEffect(() => {
+    // Load attendance mode for this student's library
+    api.get("/api/student/attendance-mode")
+      .then(({ data }) => setAttendanceMode(data.attendanceMode || "BOTH"))
+      .catch(() => setAttendanceMode("BOTH"));
+
     getMonthAttendance().then(({ data }) => {
       const today = new Date().toDateString();
       const todayRecord = (data || []).find((r) => new Date(r.attendanceDate).toDateString() === today);
@@ -131,6 +138,9 @@ export default function PunchInOut() {
     }
   };
 
+  const showManual = attendanceMode === "NORMAL" || attendanceMode === "BOTH";
+  const showQR = attendanceMode === "QR_CODE" || attendanceMode === "BOTH";
+
   return (
     <div className="max-w-lg mx-auto space-y-5">
       <div className="text-center">
@@ -141,22 +151,29 @@ export default function PunchInOut() {
       <Card className="p-8">
         <FocusRing active={isCheckedIn} elapsedSeconds={elapsed} />
 
-        <Button
-          size="lg"
-          className="w-full mt-8"
-          variant={isCheckedIn ? "danger" : "primary"}
-          onClick={handlePunch}
-          loading={punching}
-        >
-          <Hand size={18} /> {isCheckedIn ? "Punch out" : "Punch in"}
-        </Button>
+        {/* Manual punch — shown for NORMAL and BOTH */}
+        {showManual && (
+          <Button
+            size="lg"
+            className="w-full mt-8"
+            variant={isCheckedIn ? "danger" : "primary"}
+            onClick={handlePunch}
+            loading={punching}
+          >
+            <Hand size={18} /> {isCheckedIn ? "Punch out" : "Punch in"}
+          </Button>
+        )}
 
-        <button
-          onClick={() => setScannerOpen(true)}
-          className="w-full flex items-center justify-center gap-2 mt-3 py-3 rounded-xl border border-ink-600 text-sm text-ink-300 hover:border-amber-400/40 hover:text-amber-300 transition-colors"
-        >
-          <ScanLine size={16} /> Scan desk QR instead
-        </button>
+        {/* QR scan — shown for QR_CODE and BOTH */}
+        {showQR && (
+          <button
+            onClick={() => setScannerOpen(true)}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-ink-600 text-sm text-ink-300 hover:border-amber-400/40 hover:text-amber-300 transition-colors ${showManual ? "mt-3" : "mt-8"}`}
+          >
+            <ScanLine size={16} />
+            {attendanceMode === "QR_CODE" ? "Scan QR to punch" : "Scan desk QR instead"}
+          </button>
+        )}
       </Card>
 
       <Card>

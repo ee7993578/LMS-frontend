@@ -44,6 +44,8 @@ import ActiveAllocations from "./pages/libraryadmin/ActiveAllocations";
 import SlotManagement from "./pages/libraryadmin/SlotManagement";
 import AttendanceManagement from "./pages/libraryadmin/AttendanceManagement";
 import FeeManagement from "./pages/libraryadmin/FeeManagement";
+import PaymentSettings from "./pages/libraryadmin/PaymentSettings";
+import PaymentVerification from "./pages/libraryadmin/PaymentVerification";
 import Plans from "./pages/libraryadmin/Plans";
 import Reports from "./pages/libraryadmin/Reports";
 import QrAttendance from "./pages/libraryadmin/QrAttendance";
@@ -54,9 +56,12 @@ import StudentDashboard from "./pages/student/StudentDashboard";
 import PunchInOut from "./pages/student/PunchInOut";
 import MyAttendance from "./pages/student/MyAttendance";
 import FeeStatus from "./pages/student/FeeStatus";
+import Deposit from "./pages/student/Deposit";
+import PaymentProof from "./pages/student/PaymentProof";
 import MySeat from "./pages/student/MySeat";
 import Leaderboard from "./pages/student/Leaderboard";
 import StudentProfile from "./pages/student/StudentProfile";
+import TodoList from "./pages/student/TodoList";
 
 import NotFound from "./pages/NotFound";
 
@@ -70,13 +75,13 @@ export default function App() {
             containerStyle={{ top: 76, right: 16 }}
             toastOptions={{
               style: {
-                background: "#161a28",
-                color: "#e7e9ee",
-                border: "1px solid #2b3144",
+                background: "#1a1d2e",
+                color: "#e7eaf6",
+                border: "1px solid rgba(99,102,241,0.2)",
                 fontSize: "14px",
               },
-              success: { iconTheme: { primary: "#1f9d6b", secondary: "#161a28" } },
-              error: { iconTheme: { primary: "#e0552c", secondary: "#161a28" } },
+              success: { iconTheme: { primary: "#10b981", secondary: "#1a1d2e" } },
+              error: { iconTheme: { primary: "#ef4444", secondary: "#1a1d2e" } },
             }}
           />
           <Routes>
@@ -125,6 +130,8 @@ export default function App() {
                 <Route path="/admin/slots" element={<SlotManagement />} />
                 <Route path="/admin/attendance" element={<AttendanceManagement />} />
                 <Route path="/admin/fees" element={<FeeManagement />} />
+                <Route path="/admin/payment" element={<PaymentSettings />} />
+                <Route path="/admin/payment-verification" element={<PaymentVerification />} />
                 <Route path="/admin/plans" element={<Plans />} />
                 <Route path="/admin/reports" element={<Reports />} />
                 <Route path="/admin/qr" element={<QrAttendance />} />
@@ -139,9 +146,12 @@ export default function App() {
                 <Route path="/student/punch" element={<PunchInOut />} />
                 <Route path="/student/attendance" element={<MyAttendance />} />
                 <Route path="/student/fees" element={<FeeStatus />} />
+                <Route path="/student/deposit" element={<Deposit />} />
+                <Route path="/student/payment-proof" element={<PaymentProof />} />
                 <Route path="/student/seat" element={<MySeat />} />
                 <Route path="/student/leaderboard" element={<Leaderboard />} />
                 <Route path="/student/profile" element={<StudentProfile />} />
+                <Route path="/student/todo" element={<TodoList />} />
               </Route>
             </Route>
 

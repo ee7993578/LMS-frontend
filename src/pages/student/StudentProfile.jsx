@@ -23,7 +23,7 @@ export default function StudentProfile() {
   return (
     <div className="max-w-xl mx-auto space-y-5">
       <div className="text-center">
-        <div className="h-20 w-20 rounded-2xl bg-amber-400 text-ink-950 flex items-center justify-center text-2xl font-semibold mx-auto mb-3">
+        <div className="h-20 w-20 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-2xl font-semibold mx-auto mb-3">
           {initials(user?.username || "S")}
         </div>
         <h2 className="font-display text-xl text-ink-50">{user?.username}</h2>

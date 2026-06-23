@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Wallet, AlertCircle, Receipt, CheckCircle2 } from "lucide-react";
+import { Wallet, AlertCircle, Receipt, CheckCircle2, QrCode, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
@@ -77,6 +78,23 @@ export default function FeeStatus() {
           <p className="text-sm text-danger mt-1">Balance pending: {formatCurrency(latestFee.balance)}</p>
         )}
       </Card>
+
+      {!isPaid && (
+        <Card className="p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-400/10 text-amber-300 flex items-center justify-center shrink-0">
+              <QrCode size={18} />
+            </div>
+            <div>
+              <p className="text-sm text-ink-100 font-medium">Ready to pay?</p>
+              <p className="text-xs text-ink-400">View deposit QR/UPI, then upload your payment proof</p>
+            </div>
+          </div>
+          <Link to="/student/deposit">
+            <Button size="sm" variant="secondary">Deposit <ArrowRight size={14} /></Button>
+          </Link>
+        </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Payment history</CardTitle></CardHeader>

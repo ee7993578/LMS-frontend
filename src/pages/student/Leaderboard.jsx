@@ -14,7 +14,7 @@ const PERIODS = [
 ];
 
 const RANK_STYLES = {
-  1: "bg-amber-400 text-ink-950",
+  1: "bg-amber-400 text-white",
   2: "bg-ink-300 text-ink-950",
   3: "bg-amber-700 text-ink-50",
 };
@@ -53,7 +53,7 @@ export default function Leaderboard() {
             onClick={() => setPeriod(p.key)}
             className={clsx(
               "px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors",
-              period === p.key ? "bg-amber-400 text-ink-950" : "bg-ink-800 text-ink-300 hover:text-ink-100"
+              period === p.key ? "bg-amber-400 text-white" : "bg-ink-800 text-ink-300 hover:text-ink-100"
             )}
           >
             {p.label}

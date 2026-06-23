@@ -115,7 +115,7 @@ export default function Students() {
                 <TR key={s.id}>
                   <TD>
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-amber-400 text-ink-950 flex items-center justify-center text-xs font-semibold shrink-0">
+                      <div className="h-9 w-9 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-semibold shrink-0">
                         {initials(s.fullName)}
                       </div>
                       <span className="text-ink-100 font-medium">{s.fullName}</span>
@@ -155,7 +155,7 @@ export default function Students() {
             <div key={s.id} className="rounded-xl border border-ink-700 bg-ink-850 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-amber-400 text-ink-950 flex items-center justify-center text-xs font-semibold shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-amber-400 text-white flex items-center justify-center text-xs font-semibold shrink-0">
                     {initials(s.fullName)}
                   </div>
                   <div>

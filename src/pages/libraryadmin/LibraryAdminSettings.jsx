@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Building2, Clock, Save, CheckCircle2 } from "lucide-react";
+import { Building2, Clock, Save, CheckCircle2, QrCode, Hand, Layers } from "lucide-react";
 import toast from "react-hot-toast";
 import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
 import { Input, Label } from "../../components/ui/Input";
@@ -12,8 +12,10 @@ export default function LibraryAdminSettings() {
   const [library, setLibrary] = useState(null);
   const [form, setForm] = useState({ name: "", address: "", email: "", phone: "", website: "" });
   const [allocationMode, setAllocationMode] = useState("FLEXIBLE_HOUR");
+  const [attendanceMode, setAttendanceMode] = useState("BOTH");
   const [saving, setSaving] = useState(false);
   const [savingMode, setSavingMode] = useState(false);
+  const [savingAttMode, setSavingAttMode] = useState(false);
 
   useEffect(() => {
     getMyLibrary().then(({ data }) => {
@@ -26,13 +28,14 @@ export default function LibraryAdminSettings() {
         website: data.website || "",
       });
       setAllocationMode(data.allocationMode || "FLEXIBLE_HOUR");
+      setAttendanceMode(data.attendanceMode || "BOTH");
     }).catch(() => toast.error("Failed to load library settings"));
   }, []);
 
   const handleSaveInfo = async () => {
     setSaving(true);
     try {
-      await updateLibrarySettings({ ...form, allocationMode });
+      await updateLibrarySettings({ ...form, allocationMode, attendanceMode });
       toast.success("Library details saved");
     } catch {
       toast.error("Failed to save details");
@@ -44,7 +47,7 @@ export default function LibraryAdminSettings() {
   const handleSaveMode = async (mode) => {
     setSavingMode(true);
     try {
-      await updateLibrarySettings({ allocationMode: mode });
+      await updateLibrarySettings({ allocationMode: mode, attendanceMode });
       setAllocationMode(mode);
       toast.success(`Switched to ${mode === "FIXED_HOUR" ? "Fixed Hour" : "Flexible Hour"} mode`);
     } catch {
@@ -54,11 +57,25 @@ export default function LibraryAdminSettings() {
     }
   };
 
+  const handleSaveAttMode = async (mode) => {
+    setSavingAttMode(true);
+    try {
+      await updateLibrarySettings({ allocationMode, attendanceMode: mode });
+      setAttendanceMode(mode);
+      const labels = { QR_CODE: "QR Code only", NORMAL: "Normal (Punch) only", BOTH: "Both (QR + Punch)" };
+      toast.success(`Attendance mode: ${labels[mode]}`);
+    } catch {
+      toast.error("Failed to update attendance mode");
+    } finally {
+      setSavingAttMode(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
         <h2 className="font-display text-xl text-ink-50">Library Settings</h2>
-        <p className="text-sm text-ink-400 mt-0.5">Manage your library details and allocation configuration</p>
+        <p className="text-sm text-ink-400 mt-0.5">Manage your library details and configuration</p>
       </div>
 
       {/* Library Info */}
@@ -94,6 +111,80 @@ export default function LibraryAdminSettings() {
         </CardBody>
       </Card>
 
+      {/* Attendance Mode */}
+      <Card>
+        <CardHeader className="flex items-center gap-2">
+          <QrCode size={16} className="text-amber-400" />
+          <CardTitle>Attendance Mode</CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-ink-400">
+            Choose how students mark attendance. This controls what options appear on the student's punch page.
+          </p>
+
+          <div className="grid sm:grid-cols-3 gap-3">
+            {[
+              {
+                key: "NORMAL",
+                title: "Normal",
+                desc: "Students punch in/out manually. QR code option hidden.",
+                icon: <Hand size={18} className="text-info" />,
+                badge: "Manual only",
+                tone: "info",
+              },
+              {
+                key: "QR_CODE",
+                title: "QR Code",
+                desc: "Students scan QR code only. Manual punch hidden.",
+                icon: <QrCode size={18} className="text-amber-400" />,
+                badge: "QR only",
+                tone: "amber",
+              },
+              {
+                key: "BOTH",
+                title: "Both",
+                desc: "Students can use both manual punch and QR scan.",
+                icon: <Layers size={18} className="text-teal-400" />,
+                badge: "QR + Manual",
+                tone: "teal",
+              },
+            ].map(opt => (
+              <button
+                key={opt.key}
+                onClick={() => handleSaveAttMode(opt.key)}
+                disabled={savingAttMode}
+                className={clsx(
+                  "text-left rounded-2xl border-2 p-4 transition-all",
+                  attendanceMode === opt.key
+                    ? "border-amber-400 bg-amber-400/5"
+                    : "border-ink-700 hover:border-ink-500"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  {opt.icon}
+                  {attendanceMode === opt.key && <CheckCircle2 size={16} className="text-amber-400" />}
+                </div>
+                <p className="font-medium text-ink-100 text-sm mb-1">{opt.title}</p>
+                <p className="text-xs text-ink-400 leading-relaxed">{opt.desc}</p>
+              </button>
+            ))}
+          </div>
+
+          <div className={clsx(
+            "rounded-xl p-3.5 text-sm border",
+            attendanceMode === "QR_CODE" ? "bg-amber-400/5 border-amber-400/30 text-amber-300"
+            : attendanceMode === "NORMAL" ? "bg-info-soft border-info/30 text-info"
+            : "bg-teal-500/5 border-teal-500/30 text-teal-400"
+          )}>
+            Currently active: <span className="font-semibold">
+              {attendanceMode === "QR_CODE" ? "QR Code only"
+                : attendanceMode === "NORMAL" ? "Normal (Manual Punch) only"
+                : "Both — QR Code + Manual Punch"}
+            </span>
+          </div>
+        </CardBody>
+      </Card>
+
       {/* Allocation Mode */}
       <Card>
         <CardHeader className="flex items-center gap-2">
@@ -101,21 +192,21 @@ export default function LibraryAdminSettings() {
           <CardTitle>Seat Allocation Mode</CardTitle>
         </CardHeader>
         <CardBody className="space-y-4">
-          <p className="text-sm text-ink-400">Choose how students are assigned to seats. This affects the seat allocation workflow for all new assignments.</p>
+          <p className="text-sm text-ink-400">Choose how students are assigned to seats.</p>
 
           <div className="grid sm:grid-cols-2 gap-3">
             {[
               {
                 key: "FIXED_HOUR",
                 title: "Fixed Hour",
-                desc: "Students are assigned to specific time slots (e.g. 6AM–12PM). Slots are predefined per plan. Use the Slot Management page to configure slots.",
+                desc: "Students assigned to specific time slots (e.g. 6AM–12PM). Predefined slots per plan.",
                 badge: "Slot-based",
                 tone: "amber",
               },
               {
                 key: "FLEXIBLE_HOUR",
                 title: "Flexible Hour",
-                desc: "Students choose their own start and end time within the plan duration. No slot configuration needed.",
+                desc: "Students choose their own start and end time within plan duration.",
                 badge: "Time range",
                 tone: "info",
               },

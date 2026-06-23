@@ -58,7 +58,7 @@ export default function SettingsPage({ extraSections }) {
               <CardHeader><CardTitle>Profile information</CardTitle></CardHeader>
               <CardBody>
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="h-16 w-16 rounded-2xl bg-amber-400 text-ink-950 flex items-center justify-center text-xl font-semibold">
+                  <div className="h-16 w-16 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-xl font-semibold">
                     {initials(user?.username || "U")}
                   </div>
                   <div>

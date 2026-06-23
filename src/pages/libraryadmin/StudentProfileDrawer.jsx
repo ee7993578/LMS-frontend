@@ -9,7 +9,7 @@ export default function StudentProfileDrawer({ open, onClose, student }) {
   return (
     <Drawer open={open} onClose={onClose} title="Student profile">
       <div className="flex items-center gap-4 mb-6">
-        <div className="h-16 w-16 rounded-2xl bg-amber-400 text-ink-950 flex items-center justify-center text-xl font-semibold shrink-0">
+        <div className="h-16 w-16 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-xl font-semibold shrink-0">
           {initials(student.fullName)}
         </div>
         <div>

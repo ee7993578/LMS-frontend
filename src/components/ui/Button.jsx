@@ -3,7 +3,7 @@ import clsx from "clsx";
 
 const variants = {
   primary:
-    "bg-amber-400 text-ink-950 hover:bg-amber-300 shadow-[var(--shadow-glow-amber)] active:scale-[0.98]",
+    "bg-gradient-to-br from-amber-400 to-amber-500 text-white hover:from-amber-300 hover:to-amber-400 shadow-[var(--shadow-glow-amber)] active:scale-[0.98]",
   secondary:
     "bg-ink-800 text-ink-100 border border-ink-600 hover:bg-ink-700 active:scale-[0.98]",
   ghost:

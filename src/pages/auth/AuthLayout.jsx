@@ -8,7 +8,7 @@ export default function AuthLayout({ children, title, subtitle }) {
       {/* Left: form */}
       <div className="w-full lg:w-[480px] flex flex-col px-6 sm:px-10 py-8">
         <Link to="/" className="flex items-center gap-2.5 mb-10">
-          <div className="h-9 w-9 rounded-lg bg-amber-400 flex items-center justify-center text-ink-950">
+          <div className="h-9 w-9 rounded-lg bg-amber-400 flex items-center justify-center text-white">
             <BookOpenText size={20} strokeWidth={2.25} />
           </div>
           <span className="font-display text-lg text-ink-50">StudyHub</span>

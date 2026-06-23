@@ -32,7 +32,7 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center text-ink-950">
+          <div className="h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center text-white">
             <BookOpenText size={18} strokeWidth={2.25} />
           </div>
           <span className="font-display text-lg text-ink-50">StudyHub</span>
@@ -73,7 +73,7 @@ export default function Navbar() {
         <div className="fixed inset-0 z-50 bg-ink-950 lg:hidden">
           <div className="flex items-center justify-between h-16 px-5 border-b border-ink-700">
             <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-              <div className="h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center text-ink-950">
+              <div className="h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center text-white">
                 <BookOpenText size={18} />
               </div>
               <span className="font-display text-lg text-ink-50">StudyHub</span>

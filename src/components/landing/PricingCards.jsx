@@ -52,7 +52,7 @@ export default function PricingCards({ compact = false }) {
             )}
           >
             {popular && (
-              <span className="absolute -top-3 left-7 px-3 py-1 rounded-full bg-amber-400 text-ink-950 text-xs font-semibold">
+              <span className="absolute -top-3 left-7 px-3 py-1 rounded-full bg-amber-400 text-white text-xs font-semibold">
                 Most popular
               </span>
             )}

@@ -4,14 +4,14 @@ import {
 } from "recharts";
 
 const tooltipStyle = {
-  background: "#161a28",
-  border: "1px solid #2b3144",
+  background: "#1a1d2e",
+  border: "1px solid rgba(99,102,241,0.2)",
   borderRadius: "12px",
   fontSize: "12px",
-  color: "#e7e9ee",
+  color: "#e7eaf6",
 };
 
-const axisStyle = { fill: "#8a90a3", fontSize: 11 };
+const axisStyle = { fill: "#94a3b8", fontSize: 11 };
 
 export function RevenueAreaChart({ data, dataKey = "value", xKey = "label", height = 260 }) {
   return (
@@ -19,29 +19,29 @@ export function RevenueAreaChart({ data, dataKey = "value", xKey = "label", heig
       <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
         <defs>
           <linearGradient id="amberFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f5a83c" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#f5a83c" stopOpacity={0} />
+            <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1f2433" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.12)" vertical={false} />
         <XAxis dataKey={xKey} tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "#f5a83c", strokeWidth: 1 }} />
-        <Area type="monotone" dataKey={dataKey} stroke="#f5a83c" strokeWidth={2.5} fill="url(#amberFill)" />
+        <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "#6366f1", strokeWidth: 1 }} />
+        <Area type="monotone" dataKey={dataKey} stroke="#6366f1" strokeWidth={2.5} fill="url(#amberFill)" />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
-export function ComparisonBarChart({ data, bars = [{ key: "value", color: "#f5a83c" }], xKey = "label", height = 260 }) {
+export function ComparisonBarChart({ data, bars = [{ key: "value", color: "#6366f1" }], xKey = "label", height = 260 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1f2433" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.12)" vertical={false} />
         <XAxis dataKey={xKey} tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "#1f2433" }} />
-        {bars.length > 1 && <Legend wrapperStyle={{ fontSize: 12, color: "#8a90a3" }} />}
+        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(99,102,241,0.12)" }} />
+        {bars.length > 1 && <Legend wrapperStyle={{ fontSize: 12, color: "#94a3b8" }} />}
         {bars.map((b) => (
           <Bar key={b.key} dataKey={b.key} fill={b.color} radius={[6, 6, 0, 0]} maxBarSize={28} />
         ))}
@@ -50,11 +50,11 @@ export function ComparisonBarChart({ data, bars = [{ key: "value", color: "#f5a8
   );
 }
 
-export function TrendLineChart({ data, dataKey = "value", xKey = "label", height = 220, color = "#2db89f" }) {
+export function TrendLineChart({ data, dataKey = "value", xKey = "label", height = 220, color = "#3b82f6" }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1f2433" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(99,102,241,0.12)" vertical={false} />
         <XAxis dataKey={xKey} tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={tooltipStyle} />
@@ -64,7 +64,7 @@ export function TrendLineChart({ data, dataKey = "value", xKey = "label", height
   );
 }
 
-const PIE_COLORS = ["#f5a83c", "#2db89f", "#2c8fe0", "#e0552c", "#8a90a3"];
+const PIE_COLORS = ["#6366f1", "#3b82f6", "#8b5cf6", "#ef4444", "#94a3b8"];
 
 export function DonutChart({ data, height = 220, dataKey = "value", nameKey = "name" }) {
   return (
@@ -84,7 +84,7 @@ export function DonutChart({ data, height = 220, dataKey = "value", nameKey = "n
           ))}
         </Pie>
         <Tooltip contentStyle={tooltipStyle} />
-        <Legend wrapperStyle={{ fontSize: 12, color: "#8a90a3" }} />
+        <Legend wrapperStyle={{ fontSize: 12, color: "#94a3b8" }} />
       </PieChart>
     </ResponsiveContainer>
   );

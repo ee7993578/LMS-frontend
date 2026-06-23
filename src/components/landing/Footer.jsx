@@ -41,7 +41,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-10">
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2.5 mb-3">
-              <div className="h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center text-ink-950">
+              <div className="h-8 w-8 rounded-lg bg-amber-400 flex items-center justify-center text-white">
                 <BookOpenText size={18} strokeWidth={2.25} />
               </div>
               <span className="font-display text-lg text-ink-50">StudyHub</span>

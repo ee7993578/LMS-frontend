@@ -6,7 +6,7 @@ import Button from "../../components/ui/Button";
 import { createStudent, updateStudent, getAllPlans } from "../../api/libraryAdminApi";
 import { getAllSeats } from "../../api/seatApi";
 
-const empty = { fullName: "", email: "", phone: "", username: "", password: "", planId: "", seatId: "" };
+const empty = { fullName: "", email: "", phone: "", username: "", password: "", planId: "", seatId: "", dateOfJoin: new Date().toISOString().split("T")[0] };
 
 export default function StudentFormModal({ open, onClose, editing, onSaved }) {
   const [form, setForm] = useState(empty);
@@ -26,6 +26,7 @@ export default function StudentFormModal({ open, onClose, editing, onSaved }) {
             password: "",
             planId: editing.planId || editing.plan?.id || "",
             seatId: editing.seatId || editing.seat?.id || "",
+            dateOfJoin: editing.dateOfJoin || new Date().toISOString().split("T")[0],
           }
         : empty
     );
@@ -50,6 +51,7 @@ export default function StudentFormModal({ open, onClose, editing, onSaved }) {
         password: form.password,
         planId: form.planId ? Number(form.planId) : null,
         seatId: form.seatId ? Number(form.seatId) : null,
+        dateOfJoin: form.dateOfJoin || new Date().toISOString().split("T")[0],
       };
       if (editing) {
         await updateStudent(editing.id, payload);
@@ -103,6 +105,11 @@ export default function StudentFormModal({ open, onClose, editing, onSaved }) {
             <option value="">No seat assigned</option>
             {seats.map((s) => <option key={s.id} value={s.id}>{s.seatName} ({s.location})</option>)}
           </Select>
+        </div>
+        <div>
+          <Label required>Date of Joining</Label>
+          <Input type="date" value={form.dateOfJoin} onChange={update("dateOfJoin")} />
+          <p className="text-xs text-ink-500 mt-1">Subscription expiry = Date of joining + Plan days</p>
         </div>
 
         {!editing && (

@@ -60,7 +60,7 @@ export default function Testimonials() {
               "{t.quote}"
             </p>
             <div className="flex items-center justify-center gap-3 mt-7">
-              <div className="h-10 w-10 rounded-full bg-amber-400 text-ink-950 flex items-center justify-center text-sm font-semibold">
+              <div className="h-10 w-10 rounded-full bg-amber-400 text-white flex items-center justify-center text-sm font-semibold">
                 {initials(t.name)}
               </div>
               <div className="text-left">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Wallet, Search, IndianRupee, Receipt, AlertCircle } from "lucide-react";
+import { Wallet, Search, IndianRupee, Receipt, AlertCircle, ShieldCheck, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import StatCard from "../../components/ui/StatCard";
 import { Input, Select } from "../../components/ui/Input";
@@ -66,9 +67,14 @@ export default function FeeManagement() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="font-display text-xl text-ink-50">Fee management</h2>
-        <p className="text-sm text-ink-400 mt-0.5">Collection, dues, and receipts across your students</p>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-xl text-ink-50">Fee management</h2>
+          <p className="text-sm text-ink-400 mt-0.5">Collection, dues, and receipts across your students</p>
+        </div>
+        <Link to="/admin/payment-verification">
+          <Button variant="secondary" size="sm"><ShieldCheck size={14} /> Payment proofs <ArrowRight size={14} /></Button>
+        </Link>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4">

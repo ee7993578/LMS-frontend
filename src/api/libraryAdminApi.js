@@ -23,6 +23,7 @@ export const updateStudentFee = (studentId, payload) =>
   api.put(`/api/libraryadmin/fee/${studentId}`, payload);
 export const getLibraryFees = () => api.get("/api/libraryadmin/fee");
 export const getLibraryFeesByMonth = (monthId) => api.get(`/api/libraryadmin/fee/${monthId}`);
+export const getSubscriptionExpiryReport = () => api.get("/api/libraryadmin/fee/subscription-report");
 
 // ---- QR (for attendance punch) ----
 export const generateLibraryQR = () => api.get("/api/libraryadmin/generate");

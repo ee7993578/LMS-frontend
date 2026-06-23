@@ -4,10 +4,9 @@ export default function Card({ children, className, glass = false, hover = false
   return (
     <div
       className={clsx(
-        "rounded-2xl border border-ink-700",
+        "rounded-[var(--radius-card)] border border-ink-700",
         glass ? "glass" : "bg-ink-850",
-        hover && "transition-all duration-200 hover:border-ink-500 hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft-lg)]",
-        "shadow-[var(--shadow-soft)]",
+        hover ? "card-3d cursor-pointer" : "shadow-[var(--shadow-soft)]",
         className
       )}
       {...props}

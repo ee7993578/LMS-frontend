@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Flame, Clock3, Armchair, Wallet, ArrowRight, Trophy } from "lucide-react";
+import { Flame, Clock3, Armchair, Wallet, ArrowRight, Trophy, CheckSquare } from "lucide-react";
 import toast from "react-hot-toast";
 import StatCard from "../../components/ui/StatCard";
 import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
@@ -77,25 +77,40 @@ export default function StudentDashboard() {
           <CardHeader><CardTitle>Study hours — last 7 sessions</CardTitle></CardHeader>
           <CardBody>
             {trend.length > 0 ? (
-              <TrendLineChart data={trend} color="#f5a83c" />
+              <TrendLineChart data={trend} color="#6366f1" />
             ) : (
               <p className="text-sm text-ink-400 text-center py-16">No sessions yet — punch in to start tracking.</p>
             )}
           </CardBody>
         </Card>
 
-        <Card>
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Leaderboard</CardTitle>
-            <Trophy size={16} className="text-amber-400" />
-          </CardHeader>
-          <CardBody>
-            <p className="text-sm text-ink-400 mb-3">See how your study hours compare with others at your library.</p>
-            <Link to="/student/leaderboard">
-              <Button variant="secondary" className="w-full">View leaderboard</Button>
-            </Link>
-          </CardBody>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>Leaderboard</CardTitle>
+              <Trophy size={16} className="text-amber-400" />
+            </CardHeader>
+            <CardBody>
+              <p className="text-sm text-ink-400 mb-3">See how your study hours compare with others at your library.</p>
+              <Link to="/student/leaderboard">
+                <Button variant="secondary" className="w-full">View leaderboard</Button>
+              </Link>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex items-center justify-between">
+              <CardTitle>To-Do List</CardTitle>
+              <CheckSquare size={16} className="text-teal-400" />
+            </CardHeader>
+            <CardBody>
+              <p className="text-sm text-ink-400 mb-3">Plan your study session — track tasks, revisions, and daily goals.</p>
+              <Link to="/student/todo">
+                <Button variant="secondary" className="w-full">Open To-Do List <ArrowRight size={14} /></Button>
+              </Link>
+            </CardBody>
+          </Card>
+        </div>
       </div>
     </div>
   );

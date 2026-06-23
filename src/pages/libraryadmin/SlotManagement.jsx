@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Clock, Trash2, Pencil, AlertCircle, ChevronDown } from "lucide-react";
+import { Plus, Clock, Trash2, Pencil, AlertCircle, ChevronDown, Zap } from "lucide-react";
 import toast from "react-hot-toast";
 import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -8,7 +8,7 @@ import { Modal } from "../../components/ui/Modal";
 import { EmptyState, SkeletonCard } from "../../components/ui/Feedback";
 import Badge from "../../components/ui/Badge";
 import { getAllPlans } from "../../api/libraryAdminApi";
-import { getAllSlots, createSlot, updateSlot, deleteSlot, getSlotsByPlan } from "../../api/slotApi";
+import { getAllSlots, createSlot, updateSlot, deleteSlot, getSlotsByPlan, autoGenerateSlots } from "../../api/slotApi";
 import { getMyLibrary } from "../../api/librarySettingsApi";
 
 function formatTime(t) {
@@ -32,6 +32,26 @@ export default function SlotManagement() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [filterPlan, setFilterPlan] = useState("ALL");
+  const [autoGenerating, setAutoGenerating] = useState(false);
+
+  const handleAutoGenerate = async (planId) => {
+    const plan = plans.find(p => String(p.id) === String(planId));
+    if (!plan) return;
+    const hours = plan.hoursPerDay || plan.duration;
+    if (!hours || 24 % hours !== 0) {
+      return toast.error(`Study hours (${hours}h) must evenly divide 24 for auto-generation (e.g. 6, 8, 12, 24)`);
+    }
+    setAutoGenerating(true);
+    try {
+      const res = await autoGenerateSlots(planId);
+      toast.success(`${res.data.length} slots auto-generated for ${plan.name}!`);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data || "Auto-generate failed");
+    } finally {
+      setAutoGenerating(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -149,7 +169,8 @@ export default function SlotManagement() {
             <div className="space-y-6">
               {Object.entries(grouped).map(([planName, planSlots]) => {
                 const plan = plans.find(p => p.name === planName);
-                const maxSlots = plan ? Math.floor(24 / (plan.duration || 6)) : "?";
+                const planHours = plan ? (plan.hoursPerDay || plan.duration || 6) : 6;
+                const maxSlots = plan ? Math.floor(24 / planHours) : "?";
                 return (
                   <Card key={planName}>
                     <CardHeader className="flex items-center justify-between">
@@ -157,9 +178,19 @@ export default function SlotManagement() {
                         <CardTitle>{planName}</CardTitle>
                         <p className="text-xs text-ink-400 mt-0.5">{planSlots.length} / {maxSlots} slots configured</p>
                       </div>
-                      <Badge tone={planSlots.length >= maxSlots ? "success" : "warning"}>
-                        {planSlots.length >= maxSlots ? "Complete" : "Incomplete"}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleAutoGenerate(plan?.id)}
+                          disabled={autoGenerating}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-400/10 text-amber-400 hover:bg-amber-400/20 transition-colors disabled:opacity-50"
+                          title="Auto-generate continuous slots starting 6 AM"
+                        >
+                          <Zap size={12} /> Auto-generate
+                        </button>
+                        <Badge tone={planSlots.length >= maxSlots ? "success" : "warning"}>
+                          {planSlots.length >= maxSlots ? "Complete" : "Incomplete"}
+                        </Badge>
+                      </div>
                     </CardHeader>
                     <CardBody className="space-y-2">
                       {planSlots
@@ -214,7 +245,7 @@ export default function SlotManagement() {
             <Label required>Plan</Label>
             <Select value={form.planId} onChange={e => setForm({ ...form, planId: e.target.value })}>
               <option value="">Select plan</option>
-              {plans.map(p => <option key={p.id} value={p.id}>{p.name} ({p.duration}h)</option>)}
+              {plans.map(p => <option key={p.id} value={p.id}>{p.name} ({p.hoursPerDay || p.duration}h study/day)</option>)}
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -230,15 +261,19 @@ export default function SlotManagement() {
           {form.planId && form.startTime && form.endTime && (() => {
             const plan = plans.find(p => String(p.id) === String(form.planId));
             if (!plan) return null;
+            const planHours = plan.hoursPerDay || plan.duration;
             const [sh, sm] = form.startTime.split(":").map(Number);
             const [eh, em] = form.endTime.split(":").map(Number);
-            let diffH = eh - sh + (em - sm) / 60;
-            if (diffH <= 0) diffH += 24;
-            const match = Math.abs(diffH - plan.duration) < 0.01;
+            const startMins = sh * 60 + sm;
+            const endMins = eh * 60 + em;
+            let diffMins = endMins - startMins;
+            if (diffMins <= 0) diffMins += 24 * 60; // midnight cross handle
+            const diffH = diffMins / 60;
+            const match = Math.abs(diffH - planHours) < 0.01;
             return (
               <div className={`rounded-xl p-3 text-sm flex items-center gap-2 ${match ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
                 <AlertCircle size={14} />
-                Slot duration: {diffH.toFixed(1)}h — Plan requires: {plan.duration}h
+                Slot duration: {diffH.toFixed(1)}h — Plan requires: {planHours}h/day
                 {match ? " ✓" : " ✗ Duration mismatch"}
               </div>
             );

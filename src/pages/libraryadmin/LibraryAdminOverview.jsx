@@ -100,7 +100,7 @@ export default function LibraryAdminOverview() {
           <CardHeader><CardTitle>Attendance — last 7 days</CardTitle></CardHeader>
           <CardBody>
             {weekTrend.length > 0
-              ? <TrendLineChart data={weekTrend} color="#f5a83c" />
+              ? <TrendLineChart data={weekTrend} color="#6366f1" />
               : <p className="text-sm text-ink-400 text-center py-12">No attendance data yet.</p>}
           </CardBody>
         </Card>

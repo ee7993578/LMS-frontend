@@ -7,7 +7,9 @@ import Card, { CardBody } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { Select, Label, Input } from "../../components/ui/Input";
 import Badge from "../../components/ui/Badge";
+import { Modal } from "../../components/ui/Modal";
 import { getAllStudents, getAllPlans } from "../../api/libraryAdminApi";
+import { useNavigate } from "react-router-dom";
 import { getSlotsByPlan } from "../../api/slotApi";
 import {
   getAvailableSeatsForSlot, getAvailableSeatsForFlex,
@@ -34,7 +36,7 @@ function StepIndicator({ current }) {
             <div className="flex flex-col items-center gap-1.5">
               <div className={clsx(
                 "h-9 w-9 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all",
-                done ? "bg-amber-400 border-amber-400 text-ink-950" :
+                done ? "bg-amber-400 border-amber-400 text-white" :
                 active ? "border-amber-400 text-amber-400 bg-amber-400/10" :
                 "border-ink-600 text-ink-500 bg-ink-800"
               )}>
@@ -84,7 +86,7 @@ function SeatGrid({ seats, selected, onSelect }) {
                 className={clsx(
                   "aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 p-2 text-xs font-medium transition-all",
                   selected?.id === seat.id
-                    ? "bg-amber-400 border-amber-400 text-ink-950 shadow-[var(--shadow-glow-amber)]"
+                    ? "bg-amber-400 border-amber-400 text-white shadow-[var(--shadow-glow-amber)]"
                     : "bg-success-soft border-success/30 text-success hover:border-success"
                 )}
               >
@@ -100,6 +102,7 @@ function SeatGrid({ seats, selected, onSelect }) {
 }
 
 export default function SeatAllocation() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [library, setLibrary] = useState(null);
   const [students, setStudents] = useState([]);
@@ -117,6 +120,7 @@ export default function SeatAllocation() {
   const [loadingSeats, setLoadingSeats] = useState(false);
   const [saving, setSaving] = useState(false);
   const [studentError, setStudentError] = useState(null);
+  const [alreadyAllocatedModal, setAlreadyAllocatedModal] = useState(false);
 
   const isFixed = library?.allocationMode === "FIXED_HOUR";
 
@@ -184,7 +188,12 @@ export default function SeatAllocation() {
       toast.success(`Seat ${selectedSeat.seatName} allocated to ${selectedStudent.fullName}`);
       handleReset();
     } catch (err) {
-      toast.error(err.response?.data || err.message || "Allocation failed");
+      const errMsg = err.response?.data || err.message || "Allocation failed";
+      if (typeof errMsg === "string" && errMsg.includes("ALREADY_ALLOCATED")) {
+        setAlreadyAllocatedModal(true);
+      } else {
+        toast.error(errMsg);
+      }
     } finally {
       setSaving(false);
     }
@@ -213,7 +222,9 @@ export default function SeatAllocation() {
     const [eh, em] = flexEnd.split(":").map(Number);
     let diff = (eh * 60 + em) - (sh * 60 + sm);
     if (diff <= 0) diff += 24 * 60;
-    return { actual: diff / 60, expected: selectedPlan.duration, ok: Math.abs(diff / 60 - selectedPlan.duration) < 0.01 };
+    // Use hoursPerDay (study hours) not duration (subscriptionDays) for validation
+    const expectedHours = selectedPlan.hoursPerDay ?? selectedPlan.duration;
+    return { actual: diff / 60, expected: expectedHours, ok: Math.abs(diff / 60 - expectedHours) < 0.01 };
   })();
 
   return (
@@ -301,13 +312,13 @@ export default function SeatAllocation() {
                     }}
                   >
                     <option value="">Choose a plan...</option>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} — {p.duration}h — ₹{p.price}</option>)}
+                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} — {p.hoursPerDay ?? p.duration}h/day — ₹{p.price}</option>)}
                   </Select>
                 </div>
                 {selectedPlan && (
                   <div className="rounded-xl border border-ink-700 p-3.5 grid grid-cols-3 gap-3 text-center">
                     <div><p className="text-xs text-ink-500">Name</p><p className="text-sm text-ink-100 font-medium">{selectedPlan.name}</p></div>
-                    <div><p className="text-xs text-ink-500">Duration</p><p className="text-sm text-ink-100 font-medium">{selectedPlan.duration}h</p></div>
+                    <div><p className="text-xs text-ink-500">Study Hours/Day</p><p className="text-sm text-ink-100 font-medium">{selectedPlan.hoursPerDay ?? selectedPlan.duration}h</p></div>
                     <div><p className="text-xs text-ink-500">Price</p><p className="text-sm text-ink-100 font-medium">₹{selectedPlan.price}</p></div>
                   </div>
                 )}
@@ -434,6 +445,40 @@ export default function SeatAllocation() {
         )}
 
       </AnimatePresence>
+
+      {/* Already Allocated Popup */}
+      <Modal
+        open={alreadyAllocatedModal}
+        onClose={() => setAlreadyAllocatedModal(false)}
+        title="Student Already Allocated"
+        footer={
+          <div className="flex gap-2 w-full">
+            <Button variant="secondary" className="flex-1" onClick={() => setAlreadyAllocatedModal(false)}>
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={() => { setAlreadyAllocatedModal(false); navigate("/admin/allocations"); }}>
+              Go to Deallocate
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="flex items-start gap-3 rounded-xl bg-danger-soft border border-danger/30 p-4">
+            <AlertCircle size={18} className="text-danger mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm text-ink-100 font-medium">
+                {selectedStudent?.fullName} is already allocated to this seat/slot.
+              </p>
+              <p className="text-xs text-ink-400 mt-1">
+                A student can only have one seat and one slot in a library. Please deallocate the existing allocation before assigning a new one.
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-ink-500 text-center">
+            Click "Go to Deallocate" to manage active allocations.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

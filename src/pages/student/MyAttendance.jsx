@@ -42,7 +42,7 @@ export default function MyAttendance() {
       {chartData.length > 0 && (
         <Card>
           <CardHeader><CardTitle>Study hours trend</CardTitle></CardHeader>
-          <CardBody><TrendLineChart data={chartData} color="#f5a83c" /></CardBody>
+          <CardBody><TrendLineChart data={chartData} color="#6366f1" /></CardBody>
         </Card>
       )}
 
