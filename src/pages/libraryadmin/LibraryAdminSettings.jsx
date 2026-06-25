@@ -1,12 +1,28 @@
 import { useEffect, useState } from "react";
-import { Building2, Clock, Save, CheckCircle2, QrCode, Hand, Layers } from "lucide-react";
+import { Building2, Clock, Save, CheckCircle2, QrCode, Hand, Layers, CreditCard, AlertTriangle, ArrowUpCircle, History, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
-import { Input, Label } from "../../components/ui/Input";
+import { Input, Label, Textarea } from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
-import Badge from "../../components/ui/Badge";
+import Badge, { STATUS_TONE } from "../../components/ui/Badge";
+import { Modal } from "../../components/ui/Modal";
 import { getMyLibrary, updateLibrarySettings } from "../../api/librarySettingsApi";
+import {
+  getMySubscriptionStatus, getPlanCatalog, requestPlanChange, getMyPlanRequests,
+} from "../../api/libraryAdminApi";
 import clsx from "clsx";
+
+const STATUS_LABEL = {
+  TRIAL: "Free trial",
+  TRIAL_READ_ONLY: "Trial expired (read-only)",
+  ACTIVE: "Active",
+  EXPIRED_READ_ONLY: "Subscription expired (read-only)",
+  INACTIVE: "Inactive",
+  DELETED: "Deleted",
+  PENDING: "Pending",
+};
+
+const REQUEST_STATUS_TONE = { PENDING: "warning", APPROVED: "success", REJECTED: "danger" };
 
 export default function LibraryAdminSettings() {
   const [library, setLibrary] = useState(null);
@@ -16,6 +32,21 @@ export default function LibraryAdminSettings() {
   const [saving, setSaving] = useState(false);
   const [savingMode, setSavingMode] = useState(false);
   const [savingAttMode, setSavingAttMode] = useState(false);
+  const [subscription, setSubscription] = useState(null);
+
+  const [planCatalog, setPlanCatalog] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const [requestNote, setRequestNote] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const pendingRequest = myRequests.find((r) => r.status === "PENDING");
+
+  const refreshRequests = () => {
+    getMyPlanRequests().then(({ data }) => setMyRequests(data || [])).catch(() => {});
+  };
 
   useEffect(() => {
     getMyLibrary().then(({ data }) => {
@@ -30,7 +61,32 @@ export default function LibraryAdminSettings() {
       setAllocationMode(data.allocationMode || "FLEXIBLE_HOUR");
       setAttendanceMode(data.attendanceMode || "BOTH");
     }).catch(() => toast.error("Failed to load library settings"));
+
+    getMySubscriptionStatus().then(({ data }) => setSubscription(data)).catch(() => {});
+    refreshRequests();
   }, []);
+
+  const openUpgradeModal = () => {
+    setSelectedPlanId(null);
+    setRequestNote("");
+    getPlanCatalog().then(({ data }) => setPlanCatalog(data || [])).catch(() => toast.error("Couldn't load plans"));
+    setUpgradeModalOpen(true);
+  };
+
+  const submitPlanRequest = async () => {
+    if (!selectedPlanId) return toast.error("Pick a plan first");
+    setSubmittingRequest(true);
+    try {
+      await requestPlanChange(selectedPlanId, requestNote);
+      toast.success("Plan change request sent to SuperAdmin for approval");
+      setUpgradeModalOpen(false);
+      refreshRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data || "Failed to submit request");
+    } finally {
+      setSubmittingRequest(false);
+    }
+  };
 
   const handleSaveInfo = async () => {
     setSaving(true);
@@ -77,6 +133,91 @@ export default function LibraryAdminSettings() {
         <h2 className="font-display text-xl text-ink-50">Library Settings</h2>
         <p className="text-sm text-ink-400 mt-0.5">Manage your library details and configuration</p>
       </div>
+
+      {/* Subscription & Plan */}
+      {subscription && (
+        <Card>
+          <CardHeader className="flex items-center gap-2">
+            <CreditCard size={16} className="text-amber-400" />
+            <CardTitle>Subscription &amp; plan</CardTitle>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <p className="text-sm text-ink-400">Current status</p>
+                <div className="mt-1">
+                  <Badge tone={STATUS_TONE[subscription.status] || "neutral"}>
+                    {STATUS_LABEL[subscription.status] || subscription.status}
+                  </Badge>
+                </div>
+              </div>
+              {subscription.daysRemainingInCurrentPhase != null && (
+                <div className="text-right">
+                  <p className="text-sm text-ink-400">Days remaining</p>
+                  <p className="font-display text-xl text-ink-50">{subscription.daysRemainingInCurrentPhase}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div className="rounded-xl bg-ink-800 border border-ink-700 p-3">
+                <p className="text-xs text-ink-500">Plan</p>
+                <p className="text-ink-100 font-medium mt-0.5">{subscription.planName || "No plan assigned"}</p>
+              </div>
+              <div className="rounded-xl bg-ink-800 border border-ink-700 p-3">
+                <p className="text-xs text-ink-500">Current students</p>
+                <p className="text-ink-100 font-medium mt-0.5">{subscription.currentStudentCount}</p>
+              </div>
+              <div className="rounded-xl bg-ink-800 border border-ink-700 p-3">
+                <p className="text-xs text-ink-500">Plan limit</p>
+                <p className="text-ink-100 font-medium mt-0.5">{subscription.planLimit ?? "—"}</p>
+              </div>
+            </div>
+
+            {subscription.graceLimit != null && subscription.planLimit != null && (
+              <div className="rounded-xl bg-ink-800 border border-ink-700 p-3">
+                <p className="text-xs text-ink-500">Grace usage</p>
+                <p className="text-ink-100">
+                  {Math.max(0, subscription.currentStudentCount - subscription.planLimit)}/{subscription.graceLimit - subscription.planLimit} grace seats used
+                </p>
+              </div>
+            )}
+
+            {subscription.inGracePeriod && (
+              <div className="flex items-start gap-2 rounded-xl bg-warning-soft border border-warning/30 p-3">
+                <AlertTriangle size={16} className="text-warning shrink-0 mt-0.5" />
+                <p className="text-sm text-warning">
+                  {subscription.graceExceeded
+                    ? "You have exceeded your plan limit. Upgrade your subscription within 3 days."
+                    : "You are currently using grace students. Upgrade your plan before grace period ends."}
+                  {subscription.graceDaysRemaining != null && !subscription.graceExceeded && (
+                    <> ({subscription.graceDaysRemaining} day(s) left)</>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {pendingRequest && (
+              <div className="flex items-start gap-2 rounded-xl bg-info-soft border border-info/30 p-3">
+                <Clock size={16} className="text-info shrink-0 mt-0.5" />
+                <p className="text-sm text-info">
+                  Your request to switch to <span className="font-medium">{pendingRequest.requestedPlanName}</span> is
+                  pending SuperAdmin approval.
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Button onClick={openUpgradeModal} disabled={!!pendingRequest}>
+                <ArrowUpCircle size={14} /> {pendingRequest ? "Request pending" : "Upgrade / change plan"}
+              </Button>
+              <Button variant="secondary" onClick={() => setHistoryOpen(true)}>
+                <History size={14} /> Request history
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {/* Library Info */}
       <Card>
@@ -239,6 +380,88 @@ export default function LibraryAdminSettings() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Upgrade / change plan modal */}
+      <Modal
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        title="Request a plan change"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setUpgradeModalOpen(false)}>Cancel</Button>
+            <Button onClick={submitPlanRequest} loading={submittingRequest} disabled={!selectedPlanId}>
+              Send request
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-ink-400">
+            Pick the plan you'd like to switch to. Your request goes to SuperAdmin for approval —
+            the change only takes effect once approved.
+          </p>
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {planCatalog.length === 0 && <p className="text-sm text-ink-500">Loading plans...</p>}
+            {planCatalog.map((p) => (
+              <button
+                key={p.planId}
+                onClick={() => setSelectedPlanId(p.planId)}
+                disabled={subscription?.planName === p.planName}
+                className={clsx(
+                  "w-full text-left rounded-xl border-2 p-3.5 transition-all",
+                  selectedPlanId === p.planId ? "border-amber-400 bg-amber-400/5" : "border-ink-700 hover:border-ink-500",
+                  subscription?.planName === p.planName && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-ink-100">
+                    {p.planName} {subscription?.planName === p.planName && <span className="text-xs text-ink-500">(current plan)</span>}
+                  </p>
+                  <span className="text-amber-300 font-medium">₹{p.planPrice}</span>
+                </div>
+                <p className="text-xs text-ink-500 mt-1">
+                  {p.noOfStudent} students + {p.bufferStudent ?? 0} grace · {p.noOfDays} day cycle
+                </p>
+                {p.description && <p className="text-xs text-ink-400 mt-1">{p.description}</p>}
+              </button>
+            ))}
+          </div>
+          <div>
+            <Label>Note for SuperAdmin (optional)</Label>
+            <Textarea value={requestNote} onChange={(e) => setRequestNote(e.target.value)} placeholder="e.g. We're growing fast and need more seats" />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Request history modal */}
+      <Modal open={historyOpen} onClose={() => setHistoryOpen(false)} title="Plan change request history">
+        {myRequests.length === 0 ? (
+          <p className="text-sm text-ink-400 text-center py-6">No plan change requests yet.</p>
+        ) : (
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {myRequests.map((r) => (
+              <div key={r.id} className="rounded-xl border border-ink-700 p-3.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-ink-100 font-medium">
+                    {r.currentPlanName || "No plan"} → {r.requestedPlanName}
+                  </p>
+                  <Badge tone={REQUEST_STATUS_TONE[r.status] || "neutral"}>{r.status}</Badge>
+                </div>
+                {r.note && <p className="text-xs text-ink-500 mt-1">Note: {r.note}</p>}
+                {r.resolutionNote && (
+                  <p className="text-xs text-ink-400 mt-1 flex items-center gap-1">
+                    {r.status === "REJECTED" ? <XCircle size={12} className="text-danger" /> : <CheckCircle2 size={12} className="text-success" />}
+                    SuperAdmin: {r.resolutionNote}
+                  </p>
+                )}
+                <p className="text-[11px] text-ink-600 mt-1">
+                  Requested {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

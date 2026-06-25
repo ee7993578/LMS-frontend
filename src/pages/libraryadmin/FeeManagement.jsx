@@ -20,7 +20,7 @@ export default function FeeManagement() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [editingFee, setEditingFee] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ Receive: "", concession: "", lateFee: "", feeStatus: "PAID" });
+  const [form, setForm] = useState({ Receive: "", concession: "", lateFee: "" });
 
   const fetchFees = () => {
     setLoading(true);
@@ -41,7 +41,7 @@ export default function FeeManagement() {
 
   const openEdit = (fee) => {
     setEditingFee(fee);
-    setForm({ Receive: fee.Receive || "", concession: fee.concession || "", lateFee: fee.lateFee || "", feeStatus: fee.feeStatus });
+    setForm({ Receive: fee.Receive || "", concession: fee.concession || "", lateFee: fee.lateFee || "" });
   };
 
   const handleSave = async () => {
@@ -52,7 +52,7 @@ export default function FeeManagement() {
         Receive: Number(form.Receive),
         concession: Number(form.concession),
         lateFee: Number(form.lateFee),
-        feeStatus: form.feeStatus,
+        feeStatus: null,
         balance: Math.max(0, (editingFee.payable || 0) - Number(form.Receive) - Number(form.concession)),
       });
       toast.success("Fee record updated");
@@ -130,27 +130,42 @@ export default function FeeManagement() {
           <Button onClick={handleSave} loading={saving}>Save</Button>
         </>}
       >
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <Label>Amount received (₹)</Label>
-            <Input type="number" value={form.Receive} onChange={(e) => setForm({ ...form, Receive: e.target.value })} />
+        <div className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Amount received (₹)</Label>
+              <Input type="number" value={form.Receive} onChange={(e) => setForm({ ...form, Receive: e.target.value })} />
+            </div>
+            <div>
+              <Label>Concession (₹) <span className="text-ink-500 font-normal">(optional)</span></Label>
+              <Input type="number" value={form.concession} onChange={(e) => setForm({ ...form, concession: e.target.value })} />
+            </div>
+            <div className="sm:col-span-2">
+              <Label>Late fee (₹) <span className="text-ink-500 font-normal">(optional)</span></Label>
+              <Input type="number" value={form.lateFee} onChange={(e) => setForm({ ...form, lateFee: e.target.value })} />
+            </div>
           </div>
-          <div>
-            <Label>Concession (₹)</Label>
-            <Input type="number" value={form.concession} onChange={(e) => setForm({ ...form, concession: e.target.value })} />
-          </div>
-          <div>
-            <Label>Late fee (₹)</Label>
-            <Input type="number" value={form.lateFee} onChange={(e) => setForm({ ...form, lateFee: e.target.value })} />
-          </div>
-          <div>
-            <Label>Status</Label>
-            <Select value={form.feeStatus} onChange={(e) => setForm({ ...form, feeStatus: e.target.value })}>
-              <option value="PAID">Paid</option>
-              <option value="PARTIAL">Partial</option>
-              <option value="UNPAID">Unpaid</option>
-            </Select>
-          </div>
+
+          {editingFee && (() => {
+            const receive = Number(form.Receive) || 0;
+            const concession = Number(form.concession) || 0;
+            const lateFee = Number(form.lateFee) || 0;
+            const balance = Math.max(0, (editingFee.payable + lateFee) - (receive + concession));
+            const previewStatus = balance <= 0 ? "PAID" : receive > 0 ? "PARTIAL" : "UNPAID";
+            return (
+              <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3.5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-ink-400">Resulting balance</p>
+                  <p className="text-sm text-ink-100">{formatCurrency(balance)}</p>
+                </div>
+                <Badge tone={STATUS_TONE[previewStatus]}>{previewStatus}</Badge>
+              </div>
+            );
+          })()}
+
+          <p className="text-xs text-ink-500">
+            Status is calculated automatically — fully received → <span className="text-ink-300">Paid</span>, partly received → <span className="text-ink-300">Partial</span>, nothing received → <span className="text-ink-300">Unpaid</span>.
+          </p>
         </div>
       </Modal>
     </div>

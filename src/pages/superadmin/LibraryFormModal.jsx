@@ -8,7 +8,7 @@ import { createLibrary, updateLibrary, getAllLibraryPlans } from "../../api/supe
 const empty = {
   name: "", address: "", email: "", phone: "", website: "",
   adminUsername: "", adminPassword: "", adminFullName: "", adminPhone: "",
-  libraryPlanId: "", status: "PENDING",
+  libraryPlanId: "", status: "TRIAL",
 };
 
 export default function LibraryFormModal({ open, onClose, editing, onSaved }) {
@@ -85,11 +85,16 @@ export default function LibraryFormModal({ open, onClose, editing, onSaved }) {
         </div>
         <div>
           <Label>Status</Label>
-          <Select value={form.status} onChange={update("status")}>
-            {["ACTIVE", "PENDING", "GRACE", "INACTIVE", "EXPIRED", "EXCEEDED"].map((s) => (
-              <option key={s} value={s}>{s}</option>
+          <Select value={form.status} onChange={update("status")} disabled={!editing}>
+            {["TRIAL", "TRIAL_READ_ONLY", "ACTIVE", "EXPIRED_READ_ONLY", "INACTIVE", "DELETED"].map((s) => (
+              <option key={s} value={s}>{s.replaceAll("_", " ")}</option>
             ))}
           </Select>
+          {!editing && (
+            <p className="text-xs text-ink-400 mt-1">
+              New libraries always start on a 7-day TRIAL automatically — this can be changed after creation.
+            </p>
+          )}
         </div>
         <div className="sm:col-span-2">
           <Label>Subscription plan</Label>

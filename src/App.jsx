@@ -32,6 +32,7 @@ import SessionExpired from "./pages/auth/SessionExpired";
 import SuperAdminOverview from "./pages/superadmin/SuperAdminOverview";
 import Libraries from "./pages/superadmin/Libraries";
 import SuperAdminPlans from "./pages/superadmin/SuperAdminPlans";
+import SuperAdminPlanRequests from "./pages/superadmin/SuperAdminPlanRequests";
 import Billing from "./pages/superadmin/Billing";
 import SuperAdminSettings from "./pages/superadmin/SuperAdminSettings";
 
@@ -114,6 +115,7 @@ export default function App() {
                 <Route path="/superadmin" element={<SuperAdminOverview />} />
                 <Route path="/superadmin/libraries" element={<Libraries />} />
                 <Route path="/superadmin/plans" element={<SuperAdminPlans />} />
+                <Route path="/superadmin/plan-requests" element={<SuperAdminPlanRequests />} />
                 <Route path="/superadmin/billing" element={<Billing />} />
                 <Route path="/superadmin/settings" element={<SuperAdminSettings />} />
               </Route>

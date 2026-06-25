@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { getSlotsByPlan } from "../../api/slotApi";
 import {
   getAvailableSeatsForSlot, getAvailableSeatsForFlex,
-  allocateFixed, allocateFlexible,
+  allocateFixed, allocateFlexible, getActiveAllocations,
 } from "../../api/seatApi";
 import { getMyLibrary } from "../../api/librarySettingsApi";
 
@@ -109,6 +109,8 @@ export default function SeatAllocation() {
   const [plans, setPlans] = useState([]);
   const [slots, setSlots] = useState([]);
   const [availableSeats, setAvailableSeats] = useState([]);
+  // Track which students already have active allocations
+  const [studentsWithAllocation, setStudentsWithAllocation] = useState(new Set());
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -121,15 +123,22 @@ export default function SeatAllocation() {
   const [saving, setSaving] = useState(false);
   const [studentError, setStudentError] = useState(null);
   const [alreadyAllocatedModal, setAlreadyAllocatedModal] = useState(false);
+  const [alreadyAllocatedMsg, setAlreadyAllocatedMsg] = useState("");
 
   const isFixed = library?.allocationMode === "FIXED_HOUR";
 
   useEffect(() => {
-    Promise.allSettled([getMyLibrary(), getAllStudents(), getAllPlans()])
-      .then(([lib, stud, plan]) => {
+    Promise.allSettled([getMyLibrary(), getAllStudents(), getAllPlans(), getActiveAllocations()])
+      .then(([lib, stud, plan, allocs]) => {
         if (lib.status === "fulfilled") setLibrary(lib.value.data);
         if (stud.status === "fulfilled") setStudents(stud.value.data || []);
         if (plan.status === "fulfilled") setPlans(plan.value.data || []);
+        // Build set of student IDs that have active allocations
+        if (allocs.status === "fulfilled") {
+          const allocData = allocs.value.data || [];
+          const allocatedStudentIds = new Set(allocData.map(a => a.studentId));
+          setStudentsWithAllocation(allocatedStudentIds);
+        }
       });
   }, []);
 
@@ -145,8 +154,13 @@ export default function SeatAllocation() {
   }, [selectedPlan, isFixed]);
 
   const checkStudentActive = (student) => {
-    if (student?.seat) {
-      setStudentError(`${student.fullName} already has an active seat (${student.seat.seatName}). Please deallocate first.`);
+    if (!student) { setStudentError(null); return; }
+    // Check by student.seat field (legacy) OR by active allocations set
+    if (student?.seat || studentsWithAllocation.has(student.id)) {
+      const seatInfo = student?.seat ? ` (Seat: ${student.seat.seatName})` : "";
+      setStudentError(
+        `${student.fullName} already has an active seat allocation${seatInfo}. Please deallocate first from the Allocations page.`
+      );
     } else {
       setStudentError(null);
     }
@@ -190,6 +204,8 @@ export default function SeatAllocation() {
     } catch (err) {
       const errMsg = err.response?.data || err.message || "Allocation failed";
       if (typeof errMsg === "string" && errMsg.includes("ALREADY_ALLOCATED")) {
+        const msg = errMsg.replace("ALREADY_ALLOCATED:", "");
+        setAlreadyAllocatedMsg(msg);
         setAlreadyAllocatedModal(true);
       } else {
         toast.error(errMsg);
@@ -222,7 +238,6 @@ export default function SeatAllocation() {
     const [eh, em] = flexEnd.split(":").map(Number);
     let diff = (eh * 60 + em) - (sh * 60 + sm);
     if (diff <= 0) diff += 24 * 60;
-    // Use hoursPerDay (study hours) not duration (subscriptionDays) for validation
     const expectedHours = selectedPlan.hoursPerDay ?? selectedPlan.duration;
     return { actual: diff / 60, expected: expectedHours, ok: Math.abs(diff / 60 - expectedHours) < 0.01 };
   })();
@@ -258,18 +273,33 @@ export default function SeatAllocation() {
                   onChange={e => {
                     const s = students.find(x => String(x.id) === e.target.value);
                     setSelectedStudent(s || null);
-                    checkStudentActive(s);
+                    checkStudentActive(s || null);
                     setSelectedPlan(null); setSelectedSlot(null); setFlexStart(""); setFlexEnd(""); setAvailableSeats([]); setStep(1);
                   }}
                 >
                   <option value="">Choose a student...</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.fullName} {s.seat ? "⚠ (has seat)" : ""}</option>)}
+                  {students.map(s => {
+                    const hasAlloc = s.seat || studentsWithAllocation.has(s.id);
+                    return (
+                      <option key={s.id} value={s.id}>
+                        {s.fullName} {hasAlloc ? "⚠ (has active seat)" : ""}
+                      </option>
+                    );
+                  })}
                 </Select>
               </div>
               {studentError && (
                 <div className="flex gap-2 items-start rounded-xl bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
                   <AlertCircle size={15} className="mt-0.5 shrink-0" />
-                  {studentError}
+                  <div>
+                    <p>{studentError}</p>
+                    <button
+                      className="text-xs underline mt-1 text-danger/80 hover:text-danger"
+                      onClick={() => navigate("/admin/allocations")}
+                    >
+                      Go to Allocations to deallocate →
+                    </button>
+                  </div>
                 </div>
               )}
               {selectedStudent && !studentError && (
@@ -450,7 +480,7 @@ export default function SeatAllocation() {
       <Modal
         open={alreadyAllocatedModal}
         onClose={() => setAlreadyAllocatedModal(false)}
-        title="Student Already Allocated"
+        title="Student Already Has a Seat"
         footer={
           <div className="flex gap-2 w-full">
             <Button variant="secondary" className="flex-1" onClick={() => setAlreadyAllocatedModal(false)}>
@@ -467,10 +497,10 @@ export default function SeatAllocation() {
             <AlertCircle size={18} className="text-danger mt-0.5 shrink-0" />
             <div>
               <p className="text-sm text-ink-100 font-medium">
-                {selectedStudent?.fullName} is already allocated to this seat/slot.
+                {selectedStudent?.fullName} already has an active seat allocation.
               </p>
               <p className="text-xs text-ink-400 mt-1">
-                A student can only have one seat and one slot in a library. Please deallocate the existing allocation before assigning a new one.
+                {alreadyAllocatedMsg || "A student can only hold one seat at a time. Please deallocate the existing allocation before assigning a new one."}
               </p>
             </div>
           </div>

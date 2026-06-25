@@ -9,6 +9,21 @@ export const updateStudent = (id, payload) => api.put(`/api/libraryadmin/student
 export const deleteStudent = (id) => api.delete(`/api/libraryadmin/student/${id}`);
 export const getAllStudents = () => api.get("/api/libraryadmin/students");
 
+// ---- Subscription / trial / plan-usage status (drives banners + grace dashboard) ----
+// LibraryUsageDTO: { libraryId, libraryName, planName, planLimit, graceLimit, currentStudentCount,
+//                     inGracePeriod, graceDaysRemaining, graceExceeded, status, daysRemainingInCurrentPhase }
+export const getMySubscriptionStatus = () => api.get("/api/libraryadmin/subscription-status");
+
+// ---- Plan upgrade requests (library admin -> SuperAdmin approval flow) ----
+// All active SaaS plans the admin can pick from to request a switch:
+export const getPlanCatalog = () => api.get("/api/libraryadmin/plan/catalog");
+// PlanUpgradeRequestDTO: { id, libraryId, libraryName, currentPlanId, currentPlanName,
+//                           requestedPlanId, requestedPlanName, requestedPlanPrice,
+//                           requestedPlanStudents, note, status, resolutionNote, createdAt, resolvedAt }
+export const requestPlanChange = (requestedPlanId, note) =>
+  api.post("/api/libraryadmin/plan-requests", { requestedPlanId, note });
+export const getMyPlanRequests = () => api.get("/api/libraryadmin/plan-requests");
+
 // ---- Plans (per-library hourly/monthly/custom plans) ----
 // PlanDTO: { id, name, duration, price, library, libraryId }
 export const createPlan = (payload) => api.post("/api/libraryadmin/plan", payload);

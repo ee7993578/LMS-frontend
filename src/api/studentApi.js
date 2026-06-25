@@ -10,3 +10,6 @@ export const getMyProfile = () => api.get("/api/student/my-profile");
 
 export const getLeaderboard = (period = "month") =>
   api.get("/api/student/leaderboard", { params: { period } });
+
+// { status, daysRemainingInCurrentPhase } — drives the trial/expired status banner
+export const getLibraryStatus = () => api.get("/api/student/library-status");

@@ -8,12 +8,13 @@ import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import { Table, THead, TH, TBody, TR, TD } from "../../components/ui/Table";
 import { EmptyState, SkeletonRow } from "../../components/ui/Feedback";
-import { formatDateTime, formatCurrency } from "../../utils/format";
+import { formatDateTime, formatCurrency, monthIdToLabel } from "../../utils/format";
 import {
   getLibraryPaymentProofs,
   verifyPaymentProof,
   rejectPaymentProof,
 } from "../../api/paymentApi";
+import { getLibraryFees } from "../../api/libraryAdminApi";
 
 const STATUS_CONFIG = {
   PENDING: { tone: "warning", icon: Clock, label: "Pending" },
@@ -33,7 +34,9 @@ export default function PaymentVerification() {
   const [saving, setSaving] = useState(false);
   const [rejectNote, setRejectNote] = useState("");
 
-  const [form, setForm] = useState({ Receive: "", concession: "", lateFee: "", feeStatus: "PAID" });
+  const [form, setForm] = useState({ Receive: "", concession: "", lateFee: "" });
+  const [outstandingFee, setOutstandingFee] = useState(null);
+  const [loadingOutstanding, setLoadingOutstanding] = useState(false);
 
   const fetchProofs = () => {
     setLoading(true);
@@ -61,8 +64,17 @@ export default function PaymentVerification() {
       Receive: proof.amountClaimed || "",
       concession: "",
       lateFee: "",
-      feeStatus: "PAID",
     });
+    setOutstandingFee(null);
+    setLoadingOutstanding(true);
+    getLibraryFees()
+      .then(({ data }) => {
+        const studentFees = (data || []).filter((f) => f.studentId === proof.studentId && f.feeStatus !== "PAID");
+        const oldest = studentFees.sort((a, b) => a.monthId - b.monthId)[0] || null;
+        setOutstandingFee(oldest);
+      })
+      .catch(() => setOutstandingFee(null))
+      .finally(() => setLoadingOutstanding(false));
   };
 
   const handleVerify = async () => {
@@ -72,7 +84,6 @@ export default function PaymentVerification() {
         Receive: Number(form.Receive) || 0,
         concession: Number(form.concession) || 0,
         lateFee: Number(form.lateFee) || 0,
-        feeStatus: form.feeStatus,
       });
       toast.success("Proof verified — student's fee record has been updated");
       setReviewing(null);
@@ -187,29 +198,59 @@ export default function PaymentVerification() {
           {reviewing?.description && (
             <p className="text-sm text-ink-300 bg-ink-800 rounded-xl p-3 leading-relaxed">{reviewing.description}</p>
           )}
+
+          {loadingOutstanding ? (
+            <div className="h-14 rounded-xl bg-ink-800 animate-pulse" />
+          ) : outstandingFee ? (
+            <div className="rounded-xl border border-ink-700 bg-ink-800 p-3.5 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-ink-500">{monthIdToLabel(outstandingFee.monthId)} — currently owes</p>
+                <p className="text-ink-50 font-display text-lg">{formatCurrency(outstandingFee.balance)}</p>
+              </div>
+              <p className="text-xs text-ink-500">Payable {formatCurrency(outstandingFee.payable)} · Already received {formatCurrency(outstandingFee.Receive || 0)}</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3.5">
+              <p className="text-xs text-ink-300">No outstanding fee found — this student's fees are already fully paid, or no fee record exists yet for them.</p>
+            </div>
+          )}
+
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label>Amount received (₹)</Label>
               <Input type="number" icon={<IndianRupee size={15} />} value={form.Receive} onChange={(e) => setForm({ ...form, Receive: e.target.value })} />
             </div>
             <div>
-              <Label>Concession (₹)</Label>
+              <Label>Concession (₹) <span className="text-ink-500 font-normal">(optional)</span></Label>
               <Input type="number" value={form.concession} onChange={(e) => setForm({ ...form, concession: e.target.value })} />
             </div>
-            <div>
-              <Label>Late fee (₹)</Label>
+            <div className="sm:col-span-2">
+              <Label>Late fee (₹) <span className="text-ink-500 font-normal">(optional)</span></Label>
               <Input type="number" value={form.lateFee} onChange={(e) => setForm({ ...form, lateFee: e.target.value })} />
             </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={form.feeStatus} onChange={(e) => setForm({ ...form, feeStatus: e.target.value })}>
-                <option value="PAID">Paid</option>
-                <option value="PARTIAL">Partial</option>
-                <option value="UNPAID">Unpaid</option>
-              </Select>
-            </div>
           </div>
-          <p className="text-xs text-ink-500">This updates the student's most recent fee cycle — same as a manual deposit in Fee Management.</p>
+
+          {outstandingFee && (() => {
+            const newReceive = (outstandingFee.Receive || 0) + (Number(form.Receive) || 0);
+            const newConcession = (outstandingFee.concession || 0) + (Number(form.concession) || 0);
+            const newLateFee = (outstandingFee.lateFee || 0) + (Number(form.lateFee) || 0);
+            const newBalance = Math.max(0, (outstandingFee.payable + newLateFee) - (newReceive + newConcession));
+            const previewStatus = newBalance <= 0 ? "PAID" : newReceive > 0 ? "PARTIAL" : "UNPAID";
+            const cfg = { PAID: { tone: "success", label: "Paid" }, PARTIAL: { tone: "warning", label: "Partial" }, UNPAID: { tone: "danger", label: "Unpaid" } }[previewStatus];
+            return (
+              <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-3.5 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-ink-400">After this verification</p>
+                  <p className="text-sm text-ink-100">Balance will be <span className="font-semibold">{formatCurrency(newBalance)}</span></p>
+                </div>
+                <Badge tone={cfg.tone}>{cfg.label}</Badge>
+              </div>
+            );
+          })()}
+
+          <p className="text-xs text-ink-500">
+            Status is calculated automatically from payable vs. amount received — fully paid → <span className="text-ink-300">Paid</span>, partly paid → <span className="text-ink-300">Partial</span>, nothing received → <span className="text-ink-300">Unpaid</span>. This amount <span className="text-ink-300 font-medium">adds</span> to what's already been received; it does not overwrite it.
+          </p>
         </div>
       </Modal>
 

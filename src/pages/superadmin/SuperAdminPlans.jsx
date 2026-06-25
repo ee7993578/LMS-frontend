@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
-import { Plus, Layers, Pencil, Trash2, Users, CalendarDays } from "lucide-react";
+import { Plus, Layers, Pencil, Trash2, Users, CalendarDays, EyeOff, Eye, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { Modal } from "../../components/ui/Modal";
-import { Input, Label } from "../../components/ui/Input";
+import Badge from "../../components/ui/Badge";
+import { Input, Label, Textarea } from "../../components/ui/Input";
 import { EmptyState, SkeletonCard } from "../../components/ui/Feedback";
 import {
   getAllLibraryPlans, createLibraryPlan, updateLibraryPlan, deleteLibraryPlan,
+  activateLibraryPlan, deactivateLibraryPlan,
 } from "../../api/superAdminApi";
 
-const empty = { planName: "", planPrice: "", noOfStudent: "", bufferStudent: "", planOrder: "", noOfDays: 30 };
+const empty = {
+  planName: "", planPrice: "", noOfStudent: "", bufferStudent: "", planOrder: "", noOfDays: 30,
+  description: "", gracePeriodDays: 3, isActive: true,
+};
 
 export default function SuperAdminPlans() {
   const [plans, setPlans] = useState([]);
@@ -30,7 +35,7 @@ export default function SuperAdminPlans() {
 
   const openForm = (plan) => {
     setEditing(plan);
-    setForm(plan ? { ...plan } : empty);
+    setForm(plan ? { ...empty, ...plan } : empty);
     setFormOpen(true);
   };
 
@@ -46,6 +51,9 @@ export default function SuperAdminPlans() {
         bufferStudent: Number(form.bufferStudent || 0),
         planOrder: Number(form.planOrder || 0),
         noOfDays: Number(form.noOfDays || 30),
+        description: form.description || "",
+        gracePeriodDays: Number(form.gracePeriodDays || 3),
+        isActive: form.isActive !== false,
       };
       if (editing) {
         await updateLibraryPlan(editing.planId, payload);
@@ -56,8 +64,8 @@ export default function SuperAdminPlans() {
       }
       setFormOpen(false);
       fetchPlans();
-    } catch {
-      toast.error("Failed to save plan");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data || "Failed to save plan");
     } finally {
       setSaving(false);
     }
@@ -65,12 +73,23 @@ export default function SuperAdminPlans() {
 
   const handleDelete = async () => {
     try {
-      await deleteLibraryPlan(confirmDelete.planId);
-      toast.success("Plan deleted");
+      const { data } = await deleteLibraryPlan(confirmDelete.planId);
+      toast.success(typeof data === "string" ? data : "Plan deleted");
       setConfirmDelete(null);
       fetchPlans();
     } catch {
       toast.error("Failed to delete plan");
+    }
+  };
+
+  const toggleActive = async (plan) => {
+    try {
+      if (plan.isActive) await deactivateLibraryPlan(plan.planId);
+      else await activateLibraryPlan(plan.planId);
+      toast.success(plan.isActive ? "Plan deactivated — hidden from new assignments" : "Plan activated");
+      fetchPlans();
+    } catch {
+      toast.error("Failed to update plan");
     }
   };
 
@@ -93,21 +112,30 @@ export default function SuperAdminPlans() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {plans.sort((a, b) => (a.planOrder || 0) - (b.planOrder || 0)).map((plan) => (
-            <Card key={plan.planId} className="p-5" hover>
+            <Card key={plan.planId} className={`p-5 ${plan.isActive === false ? "opacity-60" : ""}`} hover>
               <div className="flex items-start justify-between mb-3">
-                <h3 className="font-display text-lg text-ink-50">{plan.planName}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-lg text-ink-50">{plan.planName}</h3>
+                  {plan.isActive === false && <Badge tone="neutral">Inactive</Badge>}
+                </div>
                 <div className="flex gap-1">
+                  <button onClick={() => toggleActive(plan)} title={plan.isActive ? "Deactivate" : "Activate"} className="h-8 w-8 rounded-lg hover:bg-ink-700 flex items-center justify-center text-ink-400">
+                    {plan.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
                   <button onClick={() => openForm(plan)} className="h-8 w-8 rounded-lg hover:bg-ink-700 flex items-center justify-center text-ink-400"><Pencil size={14} /></button>
                   <button onClick={() => setConfirmDelete(plan)} className="h-8 w-8 rounded-lg hover:bg-danger-soft flex items-center justify-center text-ink-400 hover:text-danger"><Trash2 size={14} /></button>
                 </div>
               </div>
               <p className="font-display text-3xl text-ink-50">₹{plan.planPrice?.toLocaleString("en-IN")}<span className="text-sm text-ink-400 font-sans">/mo</span></p>
+              {plan.description && <p className="text-sm text-ink-400 mt-2">{plan.description}</p>}
               <div className="flex items-center gap-4 mt-4 text-sm text-ink-400">
                 <span className="flex items-center gap-1.5"><Users size={14} /> {plan.noOfStudent} students</span>
                 <span className="flex items-center gap-1.5"><CalendarDays size={14} /> {plan.noOfDays}d cycle</span>
               </div>
               {plan.bufferStudent > 0 && (
-                <p className="text-xs text-ink-500 mt-2">+{plan.bufferStudent} buffer slots allowed</p>
+                <p className="text-xs text-ink-500 mt-2">
+                  +{plan.bufferStudent} grace slots · <Clock size={11} className="inline" /> {plan.gracePeriodDays ?? 3}-day grace window
+                </p>
               )}
             </Card>
           ))}
@@ -128,6 +156,10 @@ export default function SuperAdminPlans() {
             <Label required>Plan name</Label>
             <Input value={form.planName} onChange={(e) => setForm({ ...form, planName: e.target.value })} placeholder="Growth" />
           </div>
+          <div className="sm:col-span-2">
+            <Label>Description</Label>
+            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="What's included in this plan..." />
+          </div>
           <div>
             <Label required>Price per month (₹)</Label>
             <Input type="number" value={form.planPrice} onChange={(e) => setForm({ ...form, planPrice: e.target.value })} />
@@ -137,16 +169,30 @@ export default function SuperAdminPlans() {
             <Input type="number" value={form.noOfStudent} onChange={(e) => setForm({ ...form, noOfStudent: e.target.value })} />
           </div>
           <div>
-            <Label>Buffer students</Label>
+            <Label>Grace students</Label>
             <Input type="number" value={form.bufferStudent} onChange={(e) => setForm({ ...form, bufferStudent: e.target.value })} />
+          </div>
+          <div>
+            <Label>Grace period (days)</Label>
+            <Input type="number" value={form.gracePeriodDays} onChange={(e) => setForm({ ...form, gracePeriodDays: e.target.value })} />
           </div>
           <div>
             <Label>Billing cycle (days)</Label>
             <Input type="number" value={form.noOfDays} onChange={(e) => setForm({ ...form, noOfDays: e.target.value })} />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <Label>Display order</Label>
             <Input type="number" value={form.planOrder} onChange={(e) => setForm({ ...form, planOrder: e.target.value })} />
+          </div>
+          <div className="sm:col-span-2 flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="plan-active"
+              checked={form.isActive !== false}
+              onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+              className="h-4 w-4 rounded border-ink-600 bg-ink-800 text-amber-400 focus:ring-amber-400/40"
+            />
+            <Label htmlFor="plan-active" className="!mb-0">Active — offer this plan to new/upgrading libraries</Label>
           </div>
         </form>
       </Modal>
@@ -162,7 +208,8 @@ export default function SuperAdminPlans() {
       >
         <p className="text-sm text-ink-300">
           Delete <span className="text-ink-50 font-medium">{confirmDelete?.planName}</span>? Libraries currently
-          on this plan will keep their existing limits until reassigned.
+          on this plan will keep their existing limits until reassigned — if any library is still on this plan,
+          it will be deactivated instead of deleted so nothing breaks.
         </p>
       </Modal>
     </div>

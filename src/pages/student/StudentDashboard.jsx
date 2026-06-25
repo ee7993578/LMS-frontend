@@ -8,17 +8,21 @@ import { TrendLineChart } from "../../components/charts/Charts";
 import Button from "../../components/ui/Button";
 import { SkeletonCard } from "../../components/ui/Feedback";
 import { getMonthAttendance } from "../../api/attendanceApi";
+import { getMyFees } from "../../api/studentApi";
 import { formatMinutesToHrs } from "../../utils/format";
 
 export default function StudentDashboard() {
   const [records, setRecords] = useState([]);
+  const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMonthAttendance()
-      .then(({ data }) => setRecords(data || []))
-      .catch(() => toast.error("Couldn't load your attendance — check your library admin has set up your account", { id: "student-dash-error" }))
-      .finally(() => setLoading(false));
+    Promise.allSettled([getMonthAttendance(), getMyFees()]).then(([attRes, feeRes]) => {
+      if (attRes.status === "fulfilled") setRecords(attRes.value.data || []);
+      else toast.error("Couldn't load your attendance — check your library admin has set up your account", { id: "student-dash-error" });
+      if (feeRes.status === "fulfilled") setFees(feeRes.value.data || []);
+      setLoading(false);
+    });
   }, []);
 
   const totalMinutesMonth = records.reduce((sum, r) => sum + (r.totalStudyMinutes || 0), 0);
@@ -46,6 +50,14 @@ export default function StudentDashboard() {
     value: Math.round((r.totalStudyMinutes || 0) / 60),
   }));
 
+  const latestFee = fees.length > 0
+    ? fees.reduce((latest, f) => (f.monthId > latest.monthId ? f : latest), fees[0])
+    : null;
+  const feeStatusLabel = latestFee
+    ? latestFee.feeStatus === "PAID" ? "Paid" : latestFee.feeStatus === "PARTIAL" ? "Partial" : "Unpaid"
+    : "No record";
+  const feeStatusTone = latestFee?.feeStatus === "PAID" ? "teal" : latestFee?.feeStatus === "PARTIAL" ? "amber" : "danger";
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-amber-400/20 bg-ink-850 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative overflow-hidden">
@@ -68,7 +80,9 @@ export default function StudentDashboard() {
           <StatCard label="Study streak" value={streak} suffix=" days" icon={<Flame size={18} />} tone="amber" />
           <StatCard label="This month" value={formatMinutesToHrs(totalMinutesMonth)} icon={<Clock3 size={18} />} tone="teal" />
           <StatCard label="Sessions" value={sessionsThisMonth} icon={<Armchair size={18} />} tone="info" />
-          <StatCard label="Fee status" value="On track" icon={<Wallet size={18} />} tone="amber" />
+          <Link to="/student/fees">
+            <StatCard label="Fee status" value={feeStatusLabel} icon={<Wallet size={18} />} tone={feeStatusTone} />
+          </Link>
         </div>
       )}
 

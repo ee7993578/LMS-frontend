@@ -56,12 +56,13 @@ export default function RegisterLibrary() {
     try {
       const payload = {
         ...form,
-        status: "PENDING",
+        // Status is intentionally omitted — every new library is automatically started
+        // on a 7-day free TRIAL by the backend regardless of what's sent here.
         libraryPlanId: form.libraryPlanId ? Number(form.libraryPlanId) : null,
       };
       await registerLibrary(payload);
       setDone(true);
-      toast.success("Library registered! You can now log in.");
+      toast.success("Library registered! Your 7-day free trial has started — log in to get started.");
     } catch (err) {
       toast.error(err.response?.data || err.response?.data?.message || "Registration failed");
     } finally {
@@ -77,8 +78,9 @@ export default function RegisterLibrary() {
             <CheckCircle2 size={28} />
           </div>
           <p className="text-sm text-ink-300 mb-6 leading-relaxed">
-            Your library <span className="text-ink-50 font-medium">{form.name}</span> is registered.
-            Log in with the admin username you chose to start setting up seats, plans, and students.
+            Your library <span className="text-ink-50 font-medium">{form.name}</span> is registered and your
+            7-day free trial has started. Log in with the admin username you chose to start setting up
+            seats, plans, and students.
           </p>
           <Button onClick={() => navigate("/login")} className="w-full">
             Go to login

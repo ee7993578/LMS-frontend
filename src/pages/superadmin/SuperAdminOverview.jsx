@@ -5,32 +5,37 @@ import toast from "react-hot-toast";
 import StatCard from "../../components/ui/StatCard";
 import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card";
 import Badge, { STATUS_TONE } from "../../components/ui/Badge";
-import { RevenueAreaChart, DonutChart } from "../../components/charts/Charts";
-import { getAllLibraries } from "../../api/superAdminApi";
+import { DonutChart } from "../../components/charts/Charts";
+import { getAllLibraries, getSuperAdminDashboard } from "../../api/superAdminApi";
 import { SkeletonCard } from "../../components/ui/Feedback";
 
-const REVENUE_TREND = [
-  { label: "Jan", value: 184000 }, { label: "Feb", value: 201000 }, { label: "Mar", value: 219500 },
-  { label: "Apr", value: 235000 }, { label: "May", value: 261000 }, { label: "Jun", value: 284500 },
-];
+const STATUS_LABEL = {
+  TRIAL: "Trial",
+  TRIAL_READ_ONLY: "Trial expired",
+  ACTIVE: "Active",
+  EXPIRED_READ_ONLY: "Subscription expired",
+  INACTIVE: "Inactive",
+  DELETED: "Deleted",
+  PENDING: "Pending",
+};
 
 export default function SuperAdminOverview() {
   const [libraries, setLibraries] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAllLibraries()
-      .then(({ data }) => setLibraries(data || []))
-      .catch(() => toast.error("Couldn't load libraries — check the backend is running on :8080", { id: "super-overview-error" }))
+    Promise.all([getAllLibraries(), getSuperAdminDashboard()])
+      .then(([librariesRes, statsRes]) => {
+        setLibraries(librariesRes.data || []);
+        setStats(statsRes.data || null);
+      })
+      .catch(() => toast.error("Couldn't load dashboard — check the backend is running on :8080", { id: "super-overview-error" }))
       .finally(() => setLoading(false));
   }, []);
 
-  const totalLibraries = libraries.length;
-  const activeLibraries = libraries.filter((l) => l.status === "ACTIVE").length;
-  const totalStudents = libraries.reduce((sum, l) => sum + (l.students?.length || 0), 0);
-
-  const statusBreakdown = ["ACTIVE", "PENDING", "GRACE", "EXPIRED", "INACTIVE"]
-    .map((status) => ({ name: status, value: libraries.filter((l) => l.status === status).length }))
+  const statusBreakdown = ["TRIAL", "TRIAL_READ_ONLY", "ACTIVE", "EXPIRED_READ_ONLY", "INACTIVE", "DELETED"]
+    .map((status) => ({ name: STATUS_LABEL[status] || status, value: libraries.filter((l) => l.status === status).length }))
     .filter((d) => d.value > 0);
 
   return (
@@ -53,17 +58,51 @@ export default function SuperAdminOverview() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total libraries" value={totalLibraries} icon={<Building2 size={18} />} tone="amber" trend={8.2} trendLabel="vs last month" />
-          <StatCard label="Active libraries" value={activeLibraries} icon={<TrendingUp size={18} />} tone="teal" trend={4.1} trendLabel="vs last month" />
-          <StatCard label="Total students" value={totalStudents} icon={<Users size={18} />} tone="info" trend={12.5} trendLabel="vs last month" />
-          <StatCard label="MRR (est.)" value={284500} prefix="₹" icon={<IndianRupee size={18} />} tone="amber" trend={9.6} trendLabel="vs last month" />
+          <StatCard label="Total libraries" value={stats?.totalLibraries ?? 0} icon={<Building2 size={18} />} tone="amber" />
+          <StatCard label="Active libraries" value={stats?.activeLibraries ?? 0} icon={<TrendingUp size={18} />} tone="teal" />
+          <StatCard label="Total students" value={stats?.totalStudents ?? 0} icon={<Users size={18} />} tone="info" />
+          <StatCard label="MRR" value={Math.round(stats?.monthlyRecurringRevenue ?? 0)} prefix="₹" icon={<IndianRupee size={18} />} tone="amber" />
+        </div>
+      )}
+
+      {!loading && stats && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <p className="text-xs text-ink-500">Trial libraries</p>
+            <p className="font-display text-2xl text-ink-50 mt-1">{stats.trialLibraries}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs text-ink-500">Expired (read-only)</p>
+            <p className="font-display text-2xl text-ink-50 mt-1">{stats.expiredLibraries}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs text-ink-500">Inactive</p>
+            <p className="font-display text-2xl text-ink-50 mt-1">{stats.inactiveLibraries}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs text-ink-500">Deleted</p>
+            <p className="font-display text-2xl text-ink-50 mt-1">{stats.deletedLibraries}</p>
+          </Card>
         </div>
       )}
 
       <div className="grid lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Revenue growth</CardTitle></CardHeader>
-          <CardBody><RevenueAreaChart data={REVENUE_TREND} /></CardBody>
+        <Card className="lg:col-span-2 p-5">
+          <CardHeader><CardTitle>Revenue summary</CardTitle></CardHeader>
+          <CardBody>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="rounded-xl bg-ink-800 border border-ink-700 p-4">
+                <p className="text-xs text-ink-500">Monthly recurring revenue</p>
+                <p className="font-display text-2xl text-ink-50 mt-1">₹{Math.round(stats?.monthlyRecurringRevenue ?? 0).toLocaleString("en-IN")}</p>
+                <p className="text-xs text-ink-500 mt-1">Sum of active subscriptions' monthly price</p>
+              </div>
+              <div className="rounded-xl bg-ink-800 border border-ink-700 p-4">
+                <p className="text-xs text-ink-500">Total revenue collected (est.)</p>
+                <p className="font-display text-2xl text-ink-50 mt-1">₹{Math.round(stats?.totalRevenueCollected ?? 0).toLocaleString("en-IN")}</p>
+                <p className="text-xs text-ink-500 mt-1">Best-effort estimate based on billing history</p>
+              </div>
+            </div>
+          </CardBody>
         </Card>
         <Card>
           <CardHeader><CardTitle>Library status mix</CardTitle></CardHeader>
@@ -98,7 +137,7 @@ export default function SuperAdminOverview() {
                       <p className="text-xs text-ink-500">{lib.email}</p>
                     </div>
                   </div>
-                  <Badge tone={STATUS_TONE[lib.status] || "neutral"}>{lib.status}</Badge>
+                  <Badge tone={STATUS_TONE[lib.status] || "neutral"}>{STATUS_LABEL[lib.status] || lib.status}</Badge>
                 </div>
               ))}
             </div>

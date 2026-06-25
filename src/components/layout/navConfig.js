@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Building2, CreditCard, Settings, Users, Armchair,
   CalendarCheck, Wallet, Layers, FileBarChart, QrCode, Trophy,
   UserCircle, ScanLine, Clock, ListChecks, History, Home, Folder, CheckSquare,
-  ShieldCheck, Receipt,
+  ShieldCheck, Receipt, MapPin, ClipboardList,
 } from "lucide-react";
 
 export const SUPERADMIN_NAV = [
@@ -28,6 +28,7 @@ export const SUPERADMIN_NAV = [
     groupIcon: CreditCard,
     items: [
       { to: "/superadmin/plans", label: "Subscription Plans", icon: Layers },
+      { to: "/superadmin/plan-requests", label: "Plan Requests", icon: ClipboardList },
       { to: "/superadmin/billing", label: "Billing & Invoices", icon: CreditCard },
     ],
   },
@@ -41,54 +42,61 @@ export const SUPERADMIN_NAV = [
   },
 ];
 
+// Library Admin NAV — each groupId = desktop tab
+// Tab ordering & labels chosen for clarity
 export const LIBRARY_ADMIN_NAV = [
   {
-    groupId: "overview",
-    groupLabel: "Overview",
+    groupId: "dashboard",
+    groupLabel: "Dashboard",
     groupIcon: Home,
     items: [
       { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true },
     ],
   },
   {
-    groupId: "seating",
-    groupLabel: "Seating",
-    groupIcon: Armchair,
-    items: [
-      { to: "/admin/seats", label: "Seat Map", icon: Armchair },
-      { to: "/admin/allocate", label: "Seat Allocation", icon: ListChecks },
-      { to: "/admin/allocations", label: "Allocations", icon: History },
-      { to: "/admin/slots", label: "Slot Management", icon: Clock },
-    ],
-  },
-  {
-    // FIXED: Students alag group
     groupId: "students",
     groupLabel: "Students",
     groupIcon: Users,
     items: [
-      { to: "/admin/students", label: "Students", icon: Users },
+      { to: "/admin/students", label: "All Students", icon: Users },
     ],
   },
   {
-    // FIXED: Attendance alag group
+    groupId: "seats",
+    groupLabel: "Seats",
+    groupIcon: Armchair,
+    items: [
+      { to: "/admin/seats",        label: "Seat Map",          icon: MapPin },
+      { to: "/admin/allocate",     label: "Allocate Seat",     icon: ListChecks },
+      { to: "/admin/allocations",  label: "Active Allocations",icon: ClipboardList },
+      { to: "/admin/slots",        label: "Slot Management",   icon: Clock },
+    ],
+  },
+  {
     groupId: "attendance",
     groupLabel: "Attendance",
     groupIcon: CalendarCheck,
     items: [
-      { to: "/admin/attendance", label: "Attendance", icon: CalendarCheck },
-      { to: "/admin/qr", label: "QR Attendance", icon: QrCode },
+      { to: "/admin/attendance", label: "Attendance Log",  icon: CalendarCheck },
+      { to: "/admin/qr",         label: "QR Scanner",      icon: QrCode },
     ],
   },
   {
     groupId: "fees",
-    groupLabel: "Fees & Plans",
+    groupLabel: "Fees",
     groupIcon: Wallet,
     items: [
-      { to: "/admin/fees", label: "Fee Management", icon: Wallet },
-      { to: "/admin/payment", label: "Payment", icon: Receipt },
-      { to: "/admin/payment-verification", label: "Payment Verification", icon: ShieldCheck },
-      { to: "/admin/plans", label: "Plans", icon: Layers },
+      { to: "/admin/fees",                 label: "Fee Records",          icon: Wallet },
+      { to: "/admin/payment-verification", label: "Verify Payments",      icon: ShieldCheck },
+      { to: "/admin/payment",              label: "Payment Settings",     icon: Receipt },
+    ],
+  },
+  {
+    groupId: "plans",
+    groupLabel: "Plans",
+    groupIcon: Layers,
+    items: [
+      { to: "/admin/plans", label: "Membership Plans", icon: Layers },
     ],
   },
   {
@@ -100,26 +108,24 @@ export const LIBRARY_ADMIN_NAV = [
     ],
   },
   {
-    groupId: "system",
-    groupLabel: "System",
+    groupId: "settings",
+    groupLabel: "Settings",
     groupIcon: Settings,
     items: [
-      { to: "/admin/settings", label: "Settings", icon: Settings },
+      { to: "/admin/settings", label: "Library Settings", icon: Settings },
     ],
   },
 ];
 
-// Top-level tabs for LIBRARY_ADMIN desktop horizontal nav
-export const LIBRARY_ADMIN_TOP_TABS = [
-  { tabId: "students",   label: "Students",   icon: Users },
-  { tabId: "attendance", label: "Attendance", icon: CalendarCheck },
-  { tabId: "fees",       label: "Fee",        icon: Wallet },
+// All tab IDs for desktop horizontal nav (Library Admin)
+export const LIBRARY_ADMIN_TAB_IDS = [
+  "dashboard", "students", "seats", "attendance", "fees", "plans", "reports", "settings",
 ];
 
 export const STUDENT_NAV = [
   {
     groupId: "overview",
-    groupLabel: "Overview",
+    groupLabel: "Dashboard",
     groupIcon: Home,
     items: [
       { to: "/student", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -130,18 +136,25 @@ export const STUDENT_NAV = [
     groupLabel: "Attendance",
     groupIcon: CalendarCheck,
     items: [
-      { to: "/student/punch", label: "Punch In / Out", icon: ScanLine },
-      { to: "/student/attendance", label: "My Attendance", icon: CalendarCheck },
+      { to: "/student/punch",      label: "Punch In / Out", icon: ScanLine },
+      { to: "/student/attendance", label: "My Attendance",  icon: CalendarCheck },
     ],
   },
   {
-    groupId: "membership",
-    groupLabel: "Membership",
+    groupId: "fees",
+    groupLabel: "Fees & Payment",
     groupIcon: Wallet,
     items: [
-      { to: "/student/fees", label: "Fee Status", icon: Wallet },
-      { to: "/student/deposit", label: "Deposit", icon: QrCode },
+      { to: "/student/fees",          label: "Fee Status",    icon: Wallet },
+      { to: "/student/deposit",       label: "Make Deposit",  icon: QrCode },
       { to: "/student/payment-proof", label: "Payment Proof", icon: Receipt },
+    ],
+  },
+  {
+    groupId: "seat",
+    groupLabel: "My Seat",
+    groupIcon: Armchair,
+    items: [
       { to: "/student/seat", label: "My Seat", icon: Armchair },
     ],
   },
@@ -150,13 +163,13 @@ export const STUDENT_NAV = [
     groupLabel: "Productivity",
     groupIcon: CheckSquare,
     items: [
-      { to: "/student/todo", label: "To-Do List", icon: CheckSquare },
+      { to: "/student/todo",        label: "To-Do List",  icon: CheckSquare },
       { to: "/student/leaderboard", label: "Leaderboard", icon: Trophy },
     ],
   },
   {
     groupId: "account",
-    groupLabel: "Account",
+    groupLabel: "My Profile",
     groupIcon: UserCircle,
     items: [
       { to: "/student/profile", label: "Profile", icon: UserCircle },
