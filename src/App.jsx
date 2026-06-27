@@ -59,6 +59,7 @@ import MyAttendance from "./pages/student/MyAttendance";
 import FeeStatus from "./pages/student/FeeStatus";
 import Deposit from "./pages/student/Deposit";
 import PaymentProof from "./pages/student/PaymentProof";
+import MyReceipts from "./pages/student/MyReceipts";
 import MySeat from "./pages/student/MySeat";
 import Leaderboard from "./pages/student/Leaderboard";
 import StudentProfile from "./pages/student/StudentProfile";
@@ -150,6 +151,7 @@ export default function App() {
                 <Route path="/student/fees" element={<FeeStatus />} />
                 <Route path="/student/deposit" element={<Deposit />} />
                 <Route path="/student/payment-proof" element={<PaymentProof />} />
+                <Route path="/student/receipts" element={<MyReceipts />} />
                 <Route path="/student/seat" element={<MySeat />} />
                 <Route path="/student/leaderboard" element={<Leaderboard />} />
                 <Route path="/student/profile" element={<StudentProfile />} />

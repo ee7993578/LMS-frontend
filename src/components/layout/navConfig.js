@@ -1,4 +1,4 @@
-import {
+import { FileText,
   LayoutDashboard, Building2, CreditCard, Settings, Users, Armchair,
   CalendarCheck, Wallet, Layers, FileBarChart, QrCode, Trophy,
   UserCircle, ScanLine, Clock, ListChecks, History, Home, Folder, CheckSquare,
@@ -148,6 +148,7 @@ export const STUDENT_NAV = [
       { to: "/student/fees",          label: "Fee Status",    icon: Wallet },
       { to: "/student/deposit",       label: "Make Deposit",  icon: QrCode },
       { to: "/student/payment-proof", label: "Payment Proof", icon: Receipt },
+      { to: "/student/receipts",      label: "My Receipts",   icon: FileText },
     ],
   },
   {

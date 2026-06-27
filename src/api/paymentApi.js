@@ -47,3 +47,20 @@ export const verifyPaymentProof = (proofId, feeDTO) =>
 
 export const rejectPaymentProof = (proofId, adminNote) =>
   api.put(`/api/libraryadmin/payment-proofs/${proofId}/reject`, { adminNote });
+
+// ---- Fee Receipts (student) ----
+export const getMyReceipts = () => api.get("/api/student/receipts");
+export const getMyReceiptById = (id) => api.get(`/api/student/receipts/${id}`);
+
+// ---- Fee Receipts (admin) ----
+export const getLibraryReceipts = () => api.get("/api/libraryadmin/reports/receipts");
+export const getStudentReceipts = (studentId) => api.get(`/api/libraryadmin/reports/receipts/student/${studentId}`);
+export const getReceiptById = (id) => api.get(`/api/libraryadmin/reports/receipts/${id}`);
+
+// ---- Fee Reports (admin) ----
+export const getMonthlyCollectionReport = () => api.get("/api/libraryadmin/reports/monthly-collection");
+export const getStudentFeeReport = (params) => api.get("/api/libraryadmin/reports/student-fee-report", { params });
+export const getPendingDuesReport = () => api.get("/api/libraryadmin/reports/pending-dues");
+export const getDefaultersReport = () => api.get("/api/libraryadmin/reports/defaulters");
+export const getStudentLedger = (studentId) => api.get(`/api/libraryadmin/reports/ledger/${studentId}`);
+export const getAuditLog = () => api.get("/api/libraryadmin/reports/audit-log");
