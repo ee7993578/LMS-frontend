@@ -7,6 +7,8 @@ import Card, { CardHeader, CardBody, CardTitle } from "../../components/ui/Card"
 import { TrendLineChart, DonutChart } from "../../components/charts/Charts";
 import { SkeletonCard } from "../../components/ui/Feedback";
 import { getAllStudents, getLibraryFees } from "../../api/libraryAdminApi";
+import { getPendingRegistrations } from "../../api/registrationApi";
+import AnnouncementBanner from "../../components/ui/AnnouncementBanner";
 import { getAllSeats } from "../../api/seatApi";
 import { getLibraryAttendanceByDate, getAttendanceByDateRange } from "../../api/attendanceApi";
 import { formatMinutesToHrs } from "../../utils/format";

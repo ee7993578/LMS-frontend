@@ -10,6 +10,7 @@ import { SkeletonCard } from "../../components/ui/Feedback";
 import { getMonthAttendance } from "../../api/attendanceApi";
 import { getMyFees } from "../../api/studentApi";
 import { formatMinutesToHrs } from "../../utils/format";
+import AnnouncementBanner from "../../components/ui/AnnouncementBanner";
 
 export default function StudentDashboard() {
   const [records, setRecords] = useState([]);
@@ -60,6 +61,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-6">
+      <AnnouncementBanner role="STUDENT" />
       <div className="rounded-2xl border border-amber-400/20 bg-ink-850 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative overflow-hidden">
         <div className="absolute inset-0 lamp-glow" />
         <div className="relative z-10">

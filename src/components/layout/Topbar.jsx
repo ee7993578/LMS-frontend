@@ -1,4 +1,5 @@
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 import { useAuth } from "../../context/AuthContext";
 import { initials } from "../../utils/format";
 
@@ -26,10 +27,7 @@ export default function Topbar({ onMenuClick, title, libraryName, role }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="relative h-9 w-9 rounded-lg flex items-center justify-center text-ink-300 hover:bg-ink-800 hover:text-amber-300 transition-colors">
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-amber-400 pulse-ring" />
-        </button>
+        <NotificationBell />
         <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
           <div className="h-7 w-7 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center text-xs font-semibold shadow-[var(--shadow-glow-amber)]">
             {initials(user?.username || "U")}

@@ -60,6 +60,12 @@ import FeeStatus from "./pages/student/FeeStatus";
 import Deposit from "./pages/student/Deposit";
 import PaymentProof from "./pages/student/PaymentProof";
 import MyReceipts from "./pages/student/MyReceipts";
+import PendingApproval from "./pages/student/PendingApproval";
+import StudentRegister from "./pages/auth/StudentRegister";
+import PendingRegistrations from "./pages/libraryadmin/PendingRegistrations";
+import SupportTickets from "./pages/libraryadmin/SupportTickets";
+import SupportTicketsAdmin from "./pages/superadmin/SupportTicketsAdmin";
+import AnnouncementsPage from "./pages/superadmin/Announcements";
 import MySeat from "./pages/student/MySeat";
 import Leaderboard from "./pages/student/Leaderboard";
 import StudentProfile from "./pages/student/StudentProfile";
@@ -109,6 +115,9 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/two-factor" element={<TwoFactorAuth />} />
             <Route path="/session-expired" element={<SessionExpired />} />
+            <Route path="/register" element={<RegisterLibrary />} />
+            <Route path="/register/student" element={<StudentRegister />} />
+            <Route path="/register/:code" element={<StudentRegister />} />
 
             {/* Super Admin */}
             <Route element={<ProtectedRoute allowedRoles={["SUPERADMIN"]} />}>
@@ -118,6 +127,8 @@ export default function App() {
                 <Route path="/superadmin/plans" element={<SuperAdminPlans />} />
                 <Route path="/superadmin/plan-requests" element={<SuperAdminPlanRequests />} />
                 <Route path="/superadmin/billing" element={<Billing />} />
+                <Route path="/superadmin/tickets" element={<SupportTicketsAdmin />} />
+                <Route path="/superadmin/announcements" element={<AnnouncementsPage />} />
                 <Route path="/superadmin/settings" element={<SuperAdminSettings />} />
               </Route>
             </Route>
@@ -139,11 +150,14 @@ export default function App() {
                 <Route path="/admin/reports" element={<Reports />} />
                 <Route path="/admin/qr" element={<QrAttendance />} />
                 <Route path="/admin/settings" element={<LibraryAdminSettings />} />
+                <Route path="/admin/tickets" element={<SupportTickets />} />
+                <Route path="/admin/registrations" element={<PendingRegistrations />} />
               </Route>
             </Route>
 
             {/* Student */}
             <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+              <Route path="/student/pending-approval" element={<PendingApproval />} />
               <Route element={<DashboardLayout navItems={STUDENT_NAV} role="STUDENT" title="My Dashboard" />}>
                 <Route path="/student" element={<StudentDashboard />} />
                 <Route path="/student/punch" element={<PunchInOut />} />

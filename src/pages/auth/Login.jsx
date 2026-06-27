@@ -81,7 +81,8 @@ export default function Login() {
 
       <div className="mt-6 pt-6 border-t border-ink-700 text-center text-sm text-ink-400">
         Want to bring your library on StudyHub?{" "}
-        <Link to="/register-library" className="text-amber-400 hover:text-amber-300 font-medium">
+        <Link to="/register/student" className="text-sm text-ink-400 hover:text-amber-400 transition-colors">🎓 Student? Join a Library</Link>
+          <Link to="/register-library" className="text-amber-400 hover:text-amber-300 font-medium">
           Register your library
         </Link>
       </div>

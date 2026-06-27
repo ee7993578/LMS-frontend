@@ -1,0 +1,10 @@
+import api from "./axios";
+export const createTicket    = (body)       => api.post("/api/libraryadmin/tickets", body);
+export const getMyTickets    = ()           => api.get("/api/libraryadmin/tickets");
+export const getTicket       = (id)         => api.get(`/api/libraryadmin/tickets/${id}`);
+export const addReply        = (id, msg)    => api.post(`/api/libraryadmin/tickets/${id}/reply`, { message: msg });
+export const getAllTickets    = ()           => api.get("/api/superadmin/tickets");
+export const getTicketStats  = ()           => api.get("/api/superadmin/tickets/stats");
+export const adminGetTicket  = (id)         => api.get(`/api/superadmin/tickets/${id}`);
+export const updateStatus    = (id, status) => api.put(`/api/superadmin/tickets/${id}/status`, { status });
+export const adminReply      = (id, msg)    => api.post(`/api/superadmin/tickets/${id}/reply`, { message: msg });

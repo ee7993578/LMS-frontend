@@ -1,4 +1,4 @@
-import { FileText,
+import { FileText, LifeBuoy, Megaphone, UserPlus,
   LayoutDashboard, Building2, CreditCard, Settings, Users, Armchair,
   CalendarCheck, Wallet, Layers, FileBarChart, QrCode, Trophy,
   UserCircle, ScanLine, Clock, ListChecks, History, Home, Folder, CheckSquare,
@@ -33,6 +33,15 @@ export const SUPERADMIN_NAV = [
     ],
   },
   {
+    groupId: "support",
+    groupLabel: "Support & Comms",
+    groupIcon: LifeBuoy,
+    items: [
+      { to: "/superadmin/tickets",       label: "Support Tickets",  icon: LifeBuoy },
+      { to: "/superadmin/announcements", label: "Announcements",    icon: Megaphone },
+    ],
+  },
+  {
     groupId: "system",
     groupLabel: "System",
     groupIcon: Settings,
@@ -58,7 +67,8 @@ export const LIBRARY_ADMIN_NAV = [
     groupLabel: "Students",
     groupIcon: Users,
     items: [
-      { to: "/admin/students", label: "All Students", icon: Users },
+      { to: "/admin/students",      label: "All Students",          icon: Users    },
+      { to: "/admin/registrations", label: "Pending Registrations", icon: UserPlus },
     ],
   },
   {
@@ -108,6 +118,14 @@ export const LIBRARY_ADMIN_NAV = [
     ],
   },
   {
+    groupId: "support",
+    groupLabel: "Support",
+    groupIcon: LifeBuoy,
+    items: [
+      { to: "/admin/tickets", label: "Support Tickets", icon: LifeBuoy },
+    ],
+  },
+  {
     groupId: "settings",
     groupLabel: "Settings",
     groupIcon: Settings,
@@ -119,7 +137,7 @@ export const LIBRARY_ADMIN_NAV = [
 
 // All tab IDs for desktop horizontal nav (Library Admin)
 export const LIBRARY_ADMIN_TAB_IDS = [
-  "dashboard", "students", "seats", "attendance", "fees", "plans", "reports", "settings",
+  "dashboard", "students", "registrations", "seats", "attendance", "fees", "plans", "reports", "support", "settings",
 ];
 
 export const STUDENT_NAV = [
