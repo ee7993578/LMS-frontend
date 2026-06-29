@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
@@ -62,6 +63,7 @@ import PaymentProof from "./pages/student/PaymentProof";
 import MyReceipts from "./pages/student/MyReceipts";
 import PendingApproval from "./pages/student/PendingApproval";
 import StudentRegister from "./pages/auth/StudentRegister";
+import QrScanLanding from "./pages/auth/QrScanLanding";
 import PendingRegistrations from "./pages/libraryadmin/PendingRegistrations";
 import SupportTickets from "./pages/libraryadmin/SupportTickets";
 import SupportTicketsAdmin from "./pages/superadmin/SupportTicketsAdmin";
@@ -72,6 +74,17 @@ import StudentProfile from "./pages/student/StudentProfile";
 import TodoList from "./pages/student/TodoList";
 
 import NotFound from "./pages/NotFound";
+
+// ── Lazy-loaded report pages (code split — only loaded when visited) ──────────
+const ReportDashboard   = lazy(() => import("./pages/libraryadmin/reports/ReportDashboard"));
+const StudentFeeReport  = lazy(() => import("./pages/libraryadmin/reports/StudentFeeReport"));
+const PendingDuesReport = lazy(() => import("./pages/libraryadmin/reports/PendingDuesReport"));
+const DefaultersReport  = lazy(() => import("./pages/libraryadmin/reports/DefaultersReport"));
+const ReceiptsReport    = lazy(() => import("./pages/libraryadmin/reports/ReceiptsReport"));
+const FeeLedger         = lazy(() => import("./pages/libraryadmin/reports/FeeLedger"));
+const AuditLogReport    = lazy(() => import("./pages/libraryadmin/reports/AuditLogReport"));
+const AttendanceReport  = lazy(() => import("./pages/libraryadmin/reports/AttendanceReport"));
+const RevenueChart      = lazy(() => import("./pages/libraryadmin/reports/RevenueChart"));
 
 export default function App() {
   return (
@@ -92,89 +105,100 @@ export default function App() {
               error: { iconTheme: { primary: "#ef4444", secondary: "#1a1d2e" } },
             }}
           />
-          <Routes>
-            {/* Landing */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/features" element={<FeaturesPage />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/testimonials" element={<TestimonialsPage />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/faq" element={<FAQPage />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-            </Route>
-
-            {/* Auth */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register-library" element={<RegisterLibrary />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/otp-verification" element={<OtpVerification />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/two-factor" element={<TwoFactorAuth />} />
-            <Route path="/session-expired" element={<SessionExpired />} />
-            <Route path="/register" element={<RegisterLibrary />} />
-            <Route path="/register/student" element={<StudentRegister />} />
-            <Route path="/register/:code" element={<StudentRegister />} />
-
-            {/* Super Admin */}
-            <Route element={<ProtectedRoute allowedRoles={["SUPERADMIN"]} />}>
-              <Route element={<DashboardLayout navItems={SUPERADMIN_NAV} role="SUPERADMIN" title="Super Admin" />}>
-                <Route path="/superadmin" element={<SuperAdminOverview />} />
-                <Route path="/superadmin/libraries" element={<Libraries />} />
-                <Route path="/superadmin/plans" element={<SuperAdminPlans />} />
-                <Route path="/superadmin/plan-requests" element={<SuperAdminPlanRequests />} />
-                <Route path="/superadmin/billing" element={<Billing />} />
-                <Route path="/superadmin/tickets" element={<SupportTicketsAdmin />} />
-                <Route path="/superadmin/announcements" element={<AnnouncementsPage />} />
-                <Route path="/superadmin/settings" element={<SuperAdminSettings />} />
+          <Suspense fallback={<div className="min-h-screen bg-ink-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"/></div>}>
+            <Routes>
+              {/* Landing */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/features" element={<FeaturesPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/testimonials" element={<TestimonialsPage />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/faq" element={<FAQPage />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
               </Route>
-            </Route>
 
-            {/* Library Admin */}
-            <Route element={<ProtectedRoute allowedRoles={["LIBRARY_ADMIN"]} />}>
-              <Route element={<DashboardLayout navItems={LIBRARY_ADMIN_NAV} role="LIBRARY_ADMIN" title="Library Admin" />}>
-                <Route path="/admin" element={<LibraryAdminOverview />} />
-                <Route path="/admin/students" element={<Students />} />
-                <Route path="/admin/seats" element={<SeatMap />} />
-                <Route path="/admin/allocate" element={<SeatAllocation />} />
-                <Route path="/admin/allocations" element={<ActiveAllocations />} />
-                <Route path="/admin/slots" element={<SlotManagement />} />
-                <Route path="/admin/attendance" element={<AttendanceManagement />} />
-                <Route path="/admin/fees" element={<FeeManagement />} />
-                <Route path="/admin/payment" element={<PaymentSettings />} />
-                <Route path="/admin/payment-verification" element={<PaymentVerification />} />
-                <Route path="/admin/plans" element={<Plans />} />
-                <Route path="/admin/reports" element={<Reports />} />
-                <Route path="/admin/qr" element={<QrAttendance />} />
-                <Route path="/admin/settings" element={<LibraryAdminSettings />} />
-                <Route path="/admin/tickets" element={<SupportTickets />} />
-                <Route path="/admin/registrations" element={<PendingRegistrations />} />
+              {/* Auth */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register-library" element={<RegisterLibrary />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/otp-verification" element={<OtpVerification />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/two-factor" element={<TwoFactorAuth />} />
+              <Route path="/session-expired" element={<SessionExpired />} />
+              <Route path="/qr/:qrValue" element={<QrScanLanding />} />
+              <Route path="/register" element={<RegisterLibrary />} />
+              <Route path="/register/student" element={<StudentRegister />} />
+              <Route path="/register/:code" element={<StudentRegister />} />
+
+              {/* Super Admin */}
+              <Route element={<ProtectedRoute allowedRoles={["SUPERADMIN"]} />}>
+                <Route element={<DashboardLayout navItems={SUPERADMIN_NAV} role="SUPERADMIN" title="Super Admin" />}>
+                  <Route path="/superadmin" element={<SuperAdminOverview />} />
+                  <Route path="/superadmin/libraries" element={<Libraries />} />
+                  <Route path="/superadmin/plans" element={<SuperAdminPlans />} />
+                  <Route path="/superadmin/plan-requests" element={<SuperAdminPlanRequests />} />
+                  <Route path="/superadmin/billing" element={<Billing />} />
+                  <Route path="/superadmin/tickets" element={<SupportTicketsAdmin />} />
+                  <Route path="/superadmin/announcements" element={<AnnouncementsPage />} />
+                  <Route path="/superadmin/settings" element={<SuperAdminSettings />} />
+                </Route>
               </Route>
-            </Route>
 
-            {/* Student */}
-            <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
-              <Route path="/student/pending-approval" element={<PendingApproval />} />
-              <Route element={<DashboardLayout navItems={STUDENT_NAV} role="STUDENT" title="My Dashboard" />}>
-                <Route path="/student" element={<StudentDashboard />} />
-                <Route path="/student/punch" element={<PunchInOut />} />
-                <Route path="/student/attendance" element={<MyAttendance />} />
-                <Route path="/student/fees" element={<FeeStatus />} />
-                <Route path="/student/deposit" element={<Deposit />} />
-                <Route path="/student/payment-proof" element={<PaymentProof />} />
-                <Route path="/student/receipts" element={<MyReceipts />} />
-                <Route path="/student/seat" element={<MySeat />} />
-                <Route path="/student/leaderboard" element={<Leaderboard />} />
-                <Route path="/student/profile" element={<StudentProfile />} />
-                <Route path="/student/todo" element={<TodoList />} />
+              {/* Library Admin */}
+              <Route element={<ProtectedRoute allowedRoles={["LIBRARY_ADMIN"]} />}>
+                <Route element={<DashboardLayout navItems={LIBRARY_ADMIN_NAV} role="LIBRARY_ADMIN" title="Library Admin" />}>
+                  <Route path="/admin" element={<LibraryAdminOverview />} />
+                  <Route path="/admin/students" element={<Students />} />
+                  <Route path="/admin/seats" element={<SeatMap />} />
+                  <Route path="/admin/allocate" element={<SeatAllocation />} />
+                  <Route path="/admin/allocations" element={<ActiveAllocations />} />
+                  <Route path="/admin/slots" element={<SlotManagement />} />
+                  <Route path="/admin/attendance" element={<AttendanceManagement />} />
+                  <Route path="/admin/fees" element={<FeeManagement />} />
+                  <Route path="/admin/payment" element={<PaymentSettings />} />
+                  <Route path="/admin/payment-verification" element={<PaymentVerification />} />
+                  <Route path="/admin/plans" element={<Plans />} />
+                  <Route path="/admin/reports"              element={<ReportDashboard />} />
+                  <Route path="/admin/reports/student-fees" element={<StudentFeeReport />} />
+                  <Route path="/admin/reports/pending-dues" element={<PendingDuesReport />} />
+                  <Route path="/admin/reports/defaulters"   element={<DefaultersReport />} />
+                  <Route path="/admin/reports/receipts"     element={<ReceiptsReport />} />
+                  <Route path="/admin/reports/ledger"       element={<FeeLedger />} />
+                  <Route path="/admin/reports/audit-log"    element={<AuditLogReport />} />
+                  <Route path="/admin/reports/attendance"   element={<AttendanceReport />} />
+                  <Route path="/admin/reports/revenue"      element={<RevenueChart />} />
+                  <Route path="/admin/qr" element={<QrAttendance />} />
+                  <Route path="/admin/settings" element={<LibraryAdminSettings />} />
+                  <Route path="/admin/tickets" element={<SupportTickets />} />
+                  <Route path="/admin/registrations" element={<PendingRegistrations />} />
+                </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Student */}
+              <Route element={<ProtectedRoute allowedRoles={["STUDENT"]} />}>
+                <Route path="/student/pending-approval" element={<PendingApproval />} />
+                <Route element={<DashboardLayout navItems={STUDENT_NAV} role="STUDENT" title="My Dashboard" />}>
+                  <Route path="/student" element={<StudentDashboard />} />
+                  <Route path="/student/punch" element={<PunchInOut />} />
+                  <Route path="/student/attendance" element={<MyAttendance />} />
+                  <Route path="/student/fees" element={<FeeStatus />} />
+                  <Route path="/student/deposit" element={<Deposit />} />
+                  <Route path="/student/payment-proof" element={<PaymentProof />} />
+                  <Route path="/student/receipts" element={<MyReceipts />} />
+                  <Route path="/student/seat" element={<MySeat />} />
+                  <Route path="/student/leaderboard" element={<Leaderboard />} />
+                  <Route path="/student/profile" element={<StudentProfile />} />
+                  <Route path="/student/todo" element={<TodoList />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </ThemeProvider>
     </AuthProvider>

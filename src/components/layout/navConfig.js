@@ -3,6 +3,7 @@ import { FileText, LifeBuoy, Megaphone, UserPlus,
   CalendarCheck, Wallet, Layers, FileBarChart, QrCode, Trophy,
   UserCircle, ScanLine, Clock, ListChecks, History, Home, Folder, CheckSquare,
   ShieldCheck, Receipt, MapPin, ClipboardList,
+  IndianRupee, AlertTriangle, BookOpen, TrendingUp,
 } from "lucide-react";
 
 export const SUPERADMIN_NAV = [
@@ -114,7 +115,15 @@ export const LIBRARY_ADMIN_NAV = [
     groupLabel: "Reports",
     groupIcon: FileBarChart,
     items: [
-      { to: "/admin/reports", label: "Reports", icon: FileBarChart },
+      { to: "/admin/reports",              label: "Dashboard",         icon: FileBarChart  },
+      { to: "/admin/reports/student-fees", label: "Student Fees",      icon: IndianRupee   },
+      { to: "/admin/reports/pending-dues", label: "Pending Dues",      icon: Wallet        },
+      { to: "/admin/reports/defaulters",   label: "Defaulters",        icon: AlertTriangle },
+      { to: "/admin/reports/receipts",     label: "Receipts",          icon: Receipt       },
+      { to: "/admin/reports/ledger",       label: "Fee Ledger",        icon: BookOpen      },
+      { to: "/admin/reports/audit-log",    label: "Audit Log",         icon: History       },
+      { to: "/admin/reports/attendance",   label: "Attendance Chart",  icon: CalendarCheck },
+      { to: "/admin/reports/revenue",      label: "Revenue Chart",     icon: TrendingUp    },
     ],
   },
   {

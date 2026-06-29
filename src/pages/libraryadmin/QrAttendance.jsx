@@ -57,7 +57,14 @@ export default function QrAttendance() {
               </div>
             )}
 
-            <div className="flex gap-2 mt-6 w-full">
+            {qr && (
+              <div className="mt-4 w-full bg-ink-800 rounded-xl p-3 text-xs text-center space-y-1">
+                <p className="text-ink-500 font-medium">Smart QR — scan from phone</p>
+                <p className="text-ink-600 text-[10px]">Students → attendance punch</p>
+                <p className="text-ink-600 text-[10px]">New visitors → registration page</p>
+              </div>
+            )}
+            <div className="flex gap-2 mt-4 w-full">
               <Button onClick={handleGenerate} loading={generating} className="flex-1">
                 <RefreshCw size={15} /> {qr ? "Regenerate" : "Generate"}
               </Button>
@@ -77,10 +84,11 @@ export default function QrAttendance() {
           <CardHeader><CardTitle>How it works</CardTitle></CardHeader>
           <CardBody className="space-y-4">
             {[
-              { step: "1", text: "Generate a QR code once and print it for your entrance desk." },
-              { step: "2", text: "Students open StudyHub on their phone and scan the code to punch in." },
-              { step: "3", text: "Scanning again on the way out automatically punches them out and logs study minutes." },
-              { step: "4", text: "Regenerating the code invalidates the old one — useful if it's ever shared outside your library." },
+              { step: "1", text: "Generate a QR code once and print it at your library entrance." },
+              { step: "2", text: "Logged-in students scan it to punch in/out for attendance." },
+              { step: "3", text: "New visitors who scan it (not logged in) are redirected to your library's registration page with the code pre-filled." },
+              { step: "4", text: "One QR — two purposes: attendance for existing students, registration for new ones." },
+              { step: "5", text: "Regenerating the code invalidates the old one for security." },
             ].map((s) => (
               <div key={s.step} className="flex items-start gap-3">
                 <span className="h-7 w-7 rounded-full bg-amber-400/10 text-amber-300 text-xs font-semibold flex items-center justify-center shrink-0">{s.step}</span>

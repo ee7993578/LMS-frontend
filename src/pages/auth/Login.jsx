@@ -17,6 +17,7 @@ export default function Login() {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const redirectAfterLogin = location.state?.redirectAfterLogin;
   const [form, setForm] = useState({ username: "", password: "" });
   const [errors, setErrors] = useState({});
 

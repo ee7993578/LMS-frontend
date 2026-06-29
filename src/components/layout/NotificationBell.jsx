@@ -24,7 +24,17 @@ export default function NotificationBell() {
   const loadCount = () => getUnreadCount().then(r => setCount(r.data?.count || 0)).catch(() => {});
   const loadAll   = () => { setLoading(true); getMyNotifications().then(r => setNotifs(r.data || [])).finally(() => setLoading(false)); };
 
-  useEffect(() => { loadCount(); const t = setInterval(loadCount, 30000); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    loadCount();
+    // Only poll when tab is visible — saves backend calls on background tabs
+    let t = setInterval(loadCount, 60000); // reduced to 60s
+    const onVisibility = () => {
+      if (document.hidden) { clearInterval(t); }
+      else { loadCount(); t = setInterval(loadCount, 60000); }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { clearInterval(t); document.removeEventListener("visibilitychange", onVisibility); };
+  }, []);
 
   useEffect(() => {
     if (!open) return;

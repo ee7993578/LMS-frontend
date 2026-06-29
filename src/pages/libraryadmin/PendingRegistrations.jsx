@@ -174,7 +174,7 @@ export default function PendingRegistrations() {
                     <TR key={s.id}>
                       <TD>
                         {s.photoUrl
-                          ? <img src={imgUrl(s.photoUrl)} alt="photo" className="w-9 h-9 rounded-xl object-cover"/>
+                          ? <img loading="lazy" src={imgUrl(s.photoUrl)} alt="photo" className="w-9 h-9 rounded-xl object-cover"/>
                           : <div className="w-9 h-9 rounded-xl bg-ink-700 flex items-center justify-center text-ink-500"><User size={14}/></div>}
                       </TD>
                       <TD className="font-medium text-ink-100">{s.fullName}</TD>
@@ -219,7 +219,7 @@ export default function PendingRegistrations() {
             {/* Photo + status */}
             <div className="flex gap-4 items-start">
               {viewStudent.photoUrl
-                ? <img src={imgUrl(viewStudent.photoUrl)} alt="photo"
+                ? <img loading="lazy" src={imgUrl(viewStudent.photoUrl)} alt="photo"
                     className="w-20 h-20 rounded-2xl object-cover border-2 border-ink-600"/>
                 : <div className="w-20 h-20 rounded-2xl bg-ink-800 flex items-center justify-center"><User size={28} className="text-ink-500"/></div>}
               <div className="flex-1">
@@ -250,7 +250,7 @@ export default function PendingRegistrations() {
             {viewStudent.aadharPhotoUrl && (
               <div>
                 <p className="text-xs text-ink-500 mb-2 flex items-center gap-1"><FileText size={12}/> Aadhar Photo</p>
-                <img src={imgUrl(viewStudent.aadharPhotoUrl)} alt="aadhar"
+                <img loading="lazy" src={imgUrl(viewStudent.aadharPhotoUrl)} alt="aadhar"
                   className="w-full max-h-48 object-contain rounded-xl border border-ink-700"/>
               </div>
             )}
