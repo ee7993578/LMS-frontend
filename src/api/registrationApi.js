@@ -1,7 +1,7 @@
 import api from "./axios";
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const BASE = import.meta.env.VITE_API_URL || "https://lms-backend-ztjf.onrender.com";
 
 // PUBLIC (no auth)
 export const validateLibraryCode = (code) =>

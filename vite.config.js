@@ -44,12 +44,12 @@ export default defineConfig({
     // Proxy API calls to backend in dev — no CORS issues
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://lms-backend-ztjf.onrender.com',
         changeOrigin: true,
         secure: false,
       },
       '/uploads': {
-        target: 'http://localhost:8080',
+        target: 'https://lms-backend-ztjf.onrender.com',
         changeOrigin: true,
       },
     },
