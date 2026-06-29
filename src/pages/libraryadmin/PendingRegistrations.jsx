@@ -18,8 +18,7 @@ import {
 } from "../../api/registrationApi";
 import { getAllSeats } from "../../api/seatApi";
 import { getAllPlans } from "../../api/libraryAdminApi";
-
-const BACKEND = import.meta.env.VITE_API_URL || "http://localhost:8080";
+import { BASE_URL } from "../../api/axios";
 
 export default function PendingRegistrations() {
   const [students, setStudents]   = useState([]);
@@ -116,7 +115,7 @@ export default function PendingRegistrations() {
     toast.success("Registration link copied!");
   };
 
-  const imgUrl = (url) => url ? `${BACKEND}/${url}` : null;
+  const imgUrl = (url) => url ? `${BASE_URL}/${url}` : null;
 
   const pendingCount  = students.filter(s => s.registrationStatus === "PENDING_APPROVAL").length;
   const approvedCount = students.filter(s => s.registrationStatus === "APPROVED").length;
