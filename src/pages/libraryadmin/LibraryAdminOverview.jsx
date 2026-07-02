@@ -12,6 +12,7 @@ import AnnouncementBanner from "../../components/ui/AnnouncementBanner";
 import { getAllSeats } from "../../api/seatApi";
 import { getLibraryAttendanceByDate, getAttendanceByDateRange } from "../../api/attendanceApi";
 import { formatMinutesToHrs } from "../../utils/format";
+import OnboardingChecklist from "../../components/onboarding/OnboardingChecklist";
 
 function getLast7Days() {
   const days = [];
@@ -79,6 +80,8 @@ export default function LibraryAdminOverview() {
 
   return (
     <div className="space-y-6">
+      <OnboardingChecklist />
+
       <div>
         <h2 className="font-display text-xl text-ink-50">Today's overview</h2>
         <p className="text-sm text-ink-400 mt-0.5">{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</p>

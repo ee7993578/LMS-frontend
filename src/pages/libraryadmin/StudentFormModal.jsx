@@ -6,7 +6,7 @@ import Button from "../../components/ui/Button";
 import { createStudent, updateStudent, getAllPlans } from "../../api/libraryAdminApi";
 import { getAllSeats } from "../../api/seatApi";
 
-const empty = { fullName: "", email: "", phone: "", username: "", password: "", planId: "", seatId: "", dateOfJoin: new Date().toISOString().split("T")[0] };
+const empty = { fullName: "", email: "", phone: "", username: "", password: "", planId: "", seatId: "", dateOfJoin: new Date().toISOString().split("T")[0], changeMode: "EXTEND" };
 
 export default function StudentFormModal({ open, onClose, editing, onSaved }) {
   const [form, setForm] = useState(empty);
@@ -27,6 +27,7 @@ export default function StudentFormModal({ open, onClose, editing, onSaved }) {
             planId: editing.planId || editing.plan?.id || "",
             seatId: editing.seatId || editing.seat?.id || "",
             dateOfJoin: editing.dateOfJoin || new Date().toISOString().split("T")[0],
+            changeMode: "EXTEND",
           }
         : empty
     );
@@ -52,6 +53,7 @@ export default function StudentFormModal({ open, onClose, editing, onSaved }) {
         planId: form.planId ? Number(form.planId) : null,
         seatId: form.seatId ? Number(form.seatId) : null,
         dateOfJoin: form.dateOfJoin || new Date().toISOString().split("T")[0],
+        changeMode: form.changeMode,
       };
       if (editing) {
         await updateStudent(editing.id, payload);
@@ -111,6 +113,41 @@ export default function StudentFormModal({ open, onClose, editing, onSaved }) {
           <Input type="date" value={form.dateOfJoin} onChange={update("dateOfJoin")} />
           <p className="text-xs text-ink-500 mt-1">Subscription expiry = Date of joining + Plan days</p>
         </div>
+
+        {editing && form.planId && String(form.planId) !== String(editing.planId || editing.plan?.id || "") && (
+          <div className="sm:col-span-2 rounded-xl border border-ink-700 bg-ink-850 p-3">
+            <p className="text-xs font-semibold text-ink-300 mb-2">
+              Plan changed — how should this be applied?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 text-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="changeMode"
+                  value="EXTEND"
+                  checked={form.changeMode === "EXTEND"}
+                  onChange={update("changeMode")}
+                />
+                Extend from current expiry
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="changeMode"
+                  value="REPLACE"
+                  checked={form.changeMode === "REPLACE"}
+                  onChange={update("changeMode")}
+                />
+                Replace plan starting today
+              </label>
+            </div>
+            <p className="text-xs text-ink-500 mt-2">
+              {form.changeMode === "REPLACE"
+                ? "Unused value of the current cycle is credited toward the new invoice."
+                : "The new plan's days are added after the student's current cycle ends."}
+            </p>
+          </div>
+        )}
 
         {!editing && (
           <>

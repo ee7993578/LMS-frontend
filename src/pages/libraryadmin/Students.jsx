@@ -11,6 +11,9 @@ import { initials } from "../../utils/format";
 import StudentFormModal from "./StudentFormModal";
 import StudentProfileDrawer from "./StudentProfileDrawer";
 import { getAllStudents, deleteStudent } from "../../api/libraryAdminApi";
+import { useOnboarding } from "../../context/OnboardingContext";
+import OnboardingSuccessModal from "../../components/onboarding/OnboardingSuccessModal";
+import PageHelpNote from "../../components/onboarding/PageHelpNote";
 
 const PAGE_SIZE = 8;
 
@@ -26,6 +29,8 @@ export default function Students() {
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const { checkStepJustCompleted } = useOnboarding();
+  const [successData, setSuccessData] = useState(null);
 
   const fetchStudents = () => {
     setLoading(true);
@@ -80,6 +85,10 @@ export default function Students() {
         </Button>
       </div>
 
+      <PageHelpNote>
+        Students can be added manually here, or they can join on their own via Self Registration (Settings → Self Registration).
+      </PageHelpNote>
+
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="max-w-sm flex-1">
           <Input icon={<Search size={16} />} placeholder="Search by name, email, phone..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
@@ -108,7 +117,7 @@ export default function Students() {
               Array.from({ length: 5 }).map((_, i) => <tr key={i}><td colSpan={6}><SkeletonRow cols={6} /></td></tr>)
             ) : pageData.length === 0 ? (
               <tr><td colSpan={6}>
-                <EmptyState icon={<Users size={26} />} title="No students found" description={search ? "Try a different search." : "Add your first student to get started."} actionLabel={!search ? "Add student" : undefined} onAction={() => setFormOpen(true)} />
+                <EmptyState icon={<Users size={26} />} title={search ? "No students found" : "No Students Found"} description={search ? "Try a different search." : "Start by adding your first student or enable Self Registration."} actionLabel={!search ? "Add Student" : undefined} onAction={() => setFormOpen(true)} />
               </td></tr>
             ) : (
               pageData.map((s) => (
@@ -149,7 +158,7 @@ export default function Students() {
             </div>
           ))
         ) : pageData.length === 0 ? (
-          <EmptyState icon={<Users size={26} />} title="No students found" description={search ? "Try a different search." : "Add your first student to get started."} actionLabel={!search ? "Add student" : undefined} onAction={() => setFormOpen(true)} />
+          <EmptyState icon={<Users size={26} />} title={search ? "No students found" : "No Students Found"} description={search ? "Try a different search." : "Start by adding your first student or enable Self Registration."} actionLabel={!search ? "Add Student" : undefined} onAction={() => setFormOpen(true)} />
         ) : (
           pageData.map((s) => (
             <div key={s.id} className="rounded-xl border border-ink-700 bg-ink-850 p-4 space-y-3">
@@ -212,7 +221,26 @@ export default function Students() {
         </div>
       )}
 
-      <StudentFormModal open={formOpen} onClose={() => setFormOpen(false)} editing={editing} onSaved={() => { setFormOpen(false); fetchStudents(); }} />
+      <StudentFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        editing={editing}
+        onSaved={async () => {
+          const wasNewStudent = !editing;
+          setFormOpen(false);
+          fetchStudents();
+          if (wasNewStudent) {
+            const fresh = await checkStepJustCompleted("FIRST_STUDENT");
+            if (fresh) {
+              setSuccessData({
+                justCompletedLabel: "first student",
+                next: fresh.recommendedNextStep,
+                allCompleted: fresh.allCompleted,
+              });
+            }
+          }
+        }}
+      />
       <StudentProfileDrawer open={!!viewing} onClose={() => setViewing(null)} student={viewing} />
 
       <Modal
@@ -228,6 +256,8 @@ export default function Students() {
           Remove <span className="text-ink-50 font-medium">{confirmDelete?.fullName}</span>? Their seat will be freed and attendance history will be cleared.
         </p>
       </Modal>
+
+      <OnboardingSuccessModal data={successData} onClose={() => setSuccessData(null)} />
     </div>
   );
 }

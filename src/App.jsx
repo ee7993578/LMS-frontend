@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
+import { OnboardingProvider } from "./context/OnboardingContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import { SUPERADMIN_NAV, LIBRARY_ADMIN_NAV, STUDENT_NAV } from "./components/layout/navConfig";
@@ -90,6 +91,7 @@ export default function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
+        <OnboardingProvider>
         <BrowserRouter>
           <Toaster
             position="top-right"
@@ -200,6 +202,7 @@ export default function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
+        </OnboardingProvider>
       </ThemeProvider>
     </AuthProvider>
   );

@@ -3,7 +3,7 @@ import { AlertTriangle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { getMySubscriptionStatus } from "../../api/libraryAdminApi";
-import { getLibraryStatus } from "../../api/studentApi";
+import { getLibraryStatus, getMySubscription } from "../../api/studentApi";
 
 /**
  * Shows the trial/grace/expired banners required across every Library Admin and Student
@@ -19,6 +19,7 @@ import { getLibraryStatus } from "../../api/studentApi";
 export default function StatusBanner() {
   const { user } = useAuth();
   const [info, setInfo] = useState(null);
+  const [planInfo, setPlanInfo] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -29,6 +30,12 @@ export default function StatusBanner() {
       fetcher()
         .then(({ data }) => { if (!cancelled) setInfo(data); })
         .catch(() => { /* silent — banner just won't show if this fails */ });
+
+      if (user.roleShort === "STUDENT") {
+        getMySubscription()
+          .then(({ data }) => { if (!cancelled) setPlanInfo(data); })
+          .catch(() => { /* silent */ });
+      }
     };
 
     load();
@@ -36,25 +43,45 @@ export default function StatusBanner() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [user]);
 
-  if (!info) return null;
+  if (!info && !planInfo) return null;
 
   const banners = [];
 
-  if (info.status === "TRIAL_READ_ONLY") {
+  // Plan expiry banner (student's StudentSubscription cycle — separate from the library's
+  // own trial/grace status above).
+  if (user?.roleShort === "STUDENT" && planInfo && planInfo.status) {
+    if (planInfo.status === "EXPIRING_SOON") {
+      banners.push({
+        tone: "warning",
+        icon: <Clock size={16} />,
+        message: `Your plan expires on ${planInfo.cycleEnd} (${planInfo.daysRemaining} day${planInfo.daysRemaining === 1 ? "" : "s"} left) — renew soon.`,
+        action: null,
+      });
+    } else if (planInfo.status === "EXPIRED") {
+      banners.push({
+        tone: "danger",
+        icon: <AlertTriangle size={16} />,
+        message: `Your plan expired on ${planInfo.cycleEnd} — please contact admin to renew.`,
+        action: null,
+      });
+    }
+  }
+
+  if (info && info.status === "TRIAL_READ_ONLY") {
     banners.push({
       tone: "warning",
       icon: <AlertTriangle size={16} />,
       message: "Your trial has expired. Subscribe to continue using all features.",
       action: user?.roleShort === "LIBRARY_ADMIN" ? { label: "View plans", to: "/admin/settings" } : null,
     });
-  } else if (info.status === "EXPIRED_READ_ONLY") {
+  } else if (info && info.status === "EXPIRED_READ_ONLY") {
     banners.push({
       tone: "warning",
       icon: <AlertTriangle size={16} />,
       message: "Your subscription has expired. Renew your subscription within 7 days.",
       action: user?.roleShort === "LIBRARY_ADMIN" ? { label: "Renew now", to: "/admin/settings" } : null,
     });
-  } else if (info.status === "TRIAL" && info.daysRemainingInCurrentPhase != null) {
+  } else if (info && info.status === "TRIAL" && info.daysRemainingInCurrentPhase != null) {
     banners.push({
       tone: "info",
       icon: <Clock size={16} />,

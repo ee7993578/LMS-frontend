@@ -8,20 +8,25 @@ import { TrendLineChart } from "../../components/charts/Charts";
 import Button from "../../components/ui/Button";
 import { SkeletonCard } from "../../components/ui/Feedback";
 import { getMonthAttendance } from "../../api/attendanceApi";
-import { getMyFees } from "../../api/studentApi";
+import { getMyFees, getMySubscription } from "../../api/studentApi";
 import { formatMinutesToHrs } from "../../utils/format";
 import AnnouncementBanner from "../../components/ui/AnnouncementBanner";
+import { CalendarClock } from "lucide-react";
 
 export default function StudentDashboard() {
   const [records, setRecords] = useState([]);
   const [fees, setFees] = useState([]);
+  const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.allSettled([getMonthAttendance(), getMyFees()]).then(([attRes, feeRes]) => {
+    Promise.allSettled([getMonthAttendance(), getMyFees(), getMySubscription()]).then(([attRes, feeRes, planRes]) => {
       if (attRes.status === "fulfilled") setRecords(attRes.value.data || []);
       else toast.error("Couldn't load your attendance — check your library admin has set up your account", { id: "student-dash-error" });
       if (feeRes.status === "fulfilled") setFees(feeRes.value.data || []);
+      if (planRes.status === "fulfilled" && planRes.value.data && planRes.value.data.status !== "NONE") {
+        setPlan(planRes.value.data);
+      }
       setLoading(false);
     });
   }, []);
@@ -101,6 +106,54 @@ export default function StudentDashboard() {
         </Card>
 
         <div className="space-y-4">
+          {plan && (
+            <Card>
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>My Plan</CardTitle>
+                <CalendarClock size={16} className="text-amber-400" />
+              </CardHeader>
+              <CardBody className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-ink-50">{plan.planName || "Plan"}</p>
+                  {plan.planPrice != null && (
+                    <p className="text-sm text-ink-400">₹{plan.planPrice}</p>
+                  )}
+                </div>
+                <p className="text-xs text-ink-400">
+                  {plan.cycleStart} → {plan.cycleEnd}
+                </p>
+                {plan.planDurationDays > 0 && (
+                  <div className="h-1.5 w-full rounded-full bg-ink-800 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        plan.displayStatus === "EXPIRED" ? "bg-danger" :
+                        plan.displayStatus === "EXPIRING_SOON" ? "bg-warning" : "bg-teal-400"
+                      }`}
+                      style={{
+                        width: `${Math.min(100, Math.max(0,
+                          ((plan.planDurationDays - Math.max(0, plan.daysRemaining)) / plan.planDurationDays) * 100
+                        ))}%`,
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-ink-400">
+                    Paid: <span className="text-ink-100 font-medium">₹{plan.paid ?? 0}</span>
+                  </span>
+                  <span className="text-ink-400">
+                    Due: <span className="text-ink-100 font-medium">₹{plan.balance ?? 0}</span>
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-ink-300">
+                  {plan.daysRemaining != null && plan.daysRemaining >= 0
+                    ? `${plan.daysRemaining} day(s) remaining`
+                    : "Expired"}
+                </p>
+              </CardBody>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="flex items-center justify-between">
               <CardTitle>Leaderboard</CardTitle>

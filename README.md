@@ -11,7 +11,7 @@ Built with **React 19 + Vite + Tailwind CSS v4 + Framer Motion + Recharts + Reac
 This frontend expects your Spring Boot backend running at:
 
 ```
-http://localhost:8080
+https://lms-backend-ztjf.onrender.com
 ```
 
 The backend's CORS config (`CorsConfig.java`) only allows requests from `http://localhost:5173` — which is Vite's default dev port. **Don't change the frontend port** unless you also update the backend's CORS config.

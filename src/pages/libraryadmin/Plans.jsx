@@ -8,6 +8,9 @@ import { Input, Label } from "../../components/ui/Input";
 import { EmptyState, SkeletonCard } from "../../components/ui/Feedback";
 import { getAllPlans, createPlan, updatePlan, deletePlan } from "../../api/libraryAdminApi";
 import { formatCurrency } from "../../utils/format";
+import { useOnboarding } from "../../context/OnboardingContext";
+import OnboardingSuccessModal from "../../components/onboarding/OnboardingSuccessModal";
+import PageHelpNote from "../../components/onboarding/PageHelpNote";
 
 const empty = { name: "", subscriptionDays: "", hoursPerDay: "", price: "" };
 
@@ -19,6 +22,8 @@ export default function Plans() {
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const { checkStepJustCompleted } = useOnboarding();
+  const [successData, setSuccessData] = useState(null);
 
   const fetchPlans = () => {
     setLoading(true);
@@ -59,6 +64,14 @@ export default function Plans() {
       } else {
         await createPlan(payload);
         toast.success("Plan created");
+        const fresh = await checkStepJustCompleted("PLANS");
+        if (fresh) {
+          setSuccessData({
+            justCompletedLabel: "Student Plan",
+            next: fresh.recommendedNextStep,
+            allCompleted: fresh.allCompleted,
+          });
+        }
       }
       setFormOpen(false);
       fetchPlans();
@@ -92,13 +105,17 @@ export default function Plans() {
         <Button onClick={() => openForm(null)}><Plus size={16} /> New plan</Button>
       </div>
 
+      <PageHelpNote>
+        Student Plans determine the fee amount and validity period assigned to students. Students cannot be added until at least one plan exists.
+      </PageHelpNote>
+
       {loading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : plans.length === 0 ? (
         <Card>
-          <EmptyState icon={<Layers size={26} />} title="No plans yet" description="Create plans students can subscribe to." actionLabel="New plan" onAction={() => openForm(null)} />
+          <EmptyState icon={<Layers size={26} />} title="No Student Plans Yet" description="Student Plans define fee structure and duration. Students can only be added once a plan exists." actionLabel="Create First Plan" onAction={() => openForm(null)} />
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -174,6 +191,8 @@ export default function Plans() {
       >
         <p className="text-sm text-ink-300">Delete <span className="text-ink-50 font-medium">{confirmDelete?.name}</span>? Students currently on this plan will keep it until reassigned.</p>
       </Modal>
+
+      <OnboardingSuccessModal data={successData} onClose={() => setSuccessData(null)} />
     </div>
   );
 }

@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { Drawer } from "../../components/ui/Modal";
 import Badge from "../../components/ui/Badge";
 import { initials, formatCurrency, formatDate, monthIdToLabel } from "../../utils/format";
-import { Mail, Phone, Armchair, Layers, Calendar, Wallet, Receipt } from "lucide-react";
-import { getLibraryFees } from "../../api/libraryAdminApi";
+import { Mail, Phone, Armchair, Layers, Calendar, Wallet, Receipt, History } from "lucide-react";
+import { getLibraryFees, getStudentSubscriptionHistory } from "../../api/libraryAdminApi";
 
 export default function StudentProfileDrawer({ open, onClose, student }) {
   const [fees, setFees] = useState([]);
   const [loadingFees, setLoadingFees] = useState(false);
+  const [subHistory, setSubHistory] = useState([]);
 
   useEffect(() => {
     if (!open || !student) return;
@@ -16,6 +17,10 @@ export default function StudentProfileDrawer({ open, onClose, student }) {
       .then(({ data }) => setFees((data || []).filter((f) => f.studentId === student.id)))
       .catch(() => setFees([]))
       .finally(() => setLoadingFees(false));
+
+    getStudentSubscriptionHistory(student.id)
+      .then(({ data }) => setSubHistory(data || []))
+      .catch(() => setSubHistory([]));
   }, [open, student]);
 
   if (!student) return null;
@@ -105,6 +110,32 @@ export default function StudentProfileDrawer({ open, onClose, student }) {
                     {f.feeStatus}
                   </Badge>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {subHistory.length > 0 && (
+        <div className="rounded-xl border border-ink-700 p-4 mb-4">
+          <p className="text-xs font-semibold text-ink-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+            <History size={13} /> Plan history
+          </p>
+          <div className="space-y-3">
+            {subHistory.map((s) => (
+              <div key={s.id} className="flex items-start justify-between text-sm border-b border-ink-800 last:border-0 pb-2 last:pb-0">
+                <div>
+                  <p className="text-ink-100 font-medium">{s.planName}</p>
+                  <p className="text-ink-500 text-xs">{s.cycleStart} → {s.cycleEnd}</p>
+                  <p className="text-ink-500 text-xs">{s.changeType} · ₹{s.payable}</p>
+                </div>
+                <Badge tone={
+                  s.status === "ACTIVE" ? "success" :
+                  s.status === "EXPIRED" ? "danger" :
+                  s.status === "RENEWED" || s.status === "UPGRADED" ? "neutral" : "warning"
+                }>
+                  {s.displayStatus || s.status}
+                </Badge>
               </div>
             ))}
           </div>

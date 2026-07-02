@@ -227,15 +227,39 @@ export default function Reports() {
                 {subReport && (subReport.expiredCount > 0 || subReport.expiringSoonCount > 0) && (
                   <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle size={14} className="text-amber-400"/> Subscription Alerts</CardTitle></CardHeader>
-                    <CardBody className="grid sm:grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 flex items-center justify-between">
-                        <p className="text-sm text-ink-200">Already Expired</p>
-                        <Badge tone="danger">{subReport.expiredCount} students</Badge>
+                    <CardBody className="space-y-4">
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 flex items-center justify-between">
+                          <p className="text-sm text-ink-200">Already Expired</p>
+                          <Badge tone="danger">{subReport.expiredCount} students</Badge>
+                        </div>
+                        <div className="rounded-xl bg-amber-400/10 border border-amber-400/20 p-3 flex items-center justify-between">
+                          <p className="text-sm text-ink-200">Expiring in 7 days</p>
+                          <Badge tone="warning">{subReport.expiringSoonCount} students</Badge>
+                        </div>
                       </div>
-                      <div className="rounded-xl bg-amber-400/10 border border-amber-400/20 p-3 flex items-center justify-between">
-                        <p className="text-sm text-ink-200">Expiring in 7 days</p>
-                        <Badge tone="warning">{subReport.expiringSoonCount} students</Badge>
-                      </div>
+
+                      {(subReport.expired?.length > 0 || subReport.expiringSoon?.length > 0) && (
+                        <Table>
+                          <THead><tr><TH>Student</TH><TH>Plan</TH><TH>Cycle</TH><TH>Status</TH></tr></THead>
+                          <TBody>
+                            {[...(subReport.expired || []), ...(subReport.expiringSoon || [])].map((s) => (
+                              <TR key={s.studentId}>
+                                <TD className="font-medium text-ink-100">{s.fullName}</TD>
+                                <TD className="text-ink-400">{s.planName || "—"}</TD>
+                                <TD className="text-ink-400 text-xs">
+                                  {(s.cycleStart || s.dateOfJoin) ?? "—"} → {s.expiryDate}
+                                </TD>
+                                <TD>
+                                  {s.daysAgo != null
+                                    ? <Badge tone="danger">Expired {s.daysAgo}d ago</Badge>
+                                    : <Badge tone="warning">{s.daysLeft}d left</Badge>}
+                                </TD>
+                              </TR>
+                            ))}
+                          </TBody>
+                        </Table>
+                      )}
                     </CardBody>
                   </Card>
                 )}

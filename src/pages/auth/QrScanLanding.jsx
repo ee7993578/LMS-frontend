@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { QrCode, CheckCircle2, UserPlus, Loader2, Building2, LogIn } from "lucide-react";
-import api from "../../api/axios";
+import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
 import { punchWithQR } from "../../api/attendanceApi";
+
+const BASE = import.meta.env.VITE_API_URL || "https://lms-backend-ztjf.onrender.com";
 
 export default function QrScanLanding() {
   const { qrValue } = useParams();
@@ -23,7 +25,7 @@ export default function QrScanLanding() {
     setStatus("resolving");
     try {
       // 1. Resolve QR → get library info
-      const { data } = await api.get(`/api/public/qr/resolve/${qrValue}`);
+      const { data } = await axios.get(`${BASE}/api/public/qr/resolve/${qrValue}`);
       setLibraryInfo(data);
 
       // 2. Decide action based on auth state

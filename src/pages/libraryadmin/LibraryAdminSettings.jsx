@@ -8,9 +8,14 @@ import Badge, { STATUS_TONE } from "../../components/ui/Badge";
 import { Modal } from "../../components/ui/Modal";
 import { getMyLibrary, updateLibrarySettings } from "../../api/librarySettingsApi";
 import {
-  getMySubscriptionStatus, getPlanCatalog, requestPlanChange, getMyPlanRequests,
+  getMySubscriptionStatus, getPlanCatalog, getMyPlanRequests,
+  initiatePlanUpgrade, verifyPlanUpgrade, cancelPlanUpgrade,
 } from "../../api/libraryAdminApi";
+import { openRazorpayCheckout } from "../../utils/razorpay";
 import clsx from "clsx";
+import { useOnboarding } from "../../context/OnboardingContext";
+import OnboardingSuccessModal from "../../components/onboarding/OnboardingSuccessModal";
+import PageHelpNote from "../../components/onboarding/PageHelpNote";
 
 const STATUS_LABEL = {
   TRIAL: "Free trial",
@@ -29,10 +34,14 @@ export default function LibraryAdminSettings() {
   const [form, setForm] = useState({ name: "", address: "", email: "", phone: "", website: "" });
   const [allocationMode, setAllocationMode] = useState("FLEXIBLE_HOUR");
   const [attendanceMode, setAttendanceMode] = useState("BOTH");
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [savingRegistration, setSavingRegistration] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingMode, setSavingMode] = useState(false);
   const [savingAttMode, setSavingAttMode] = useState(false);
   const [subscription, setSubscription] = useState(null);
+  const { checkStepJustCompleted } = useOnboarding();
+  const [successData, setSuccessData] = useState(null);
 
   const [planCatalog, setPlanCatalog] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
@@ -43,6 +52,7 @@ export default function LibraryAdminSettings() {
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const pendingRequest = myRequests.find((r) => r.status === "PENDING");
+  const selectedPlanPrice = planCatalog.find((p) => p.planId === selectedPlanId)?.planPrice ?? 0;
 
   const refreshRequests = () => {
     getMyPlanRequests().then(({ data }) => setMyRequests(data || [])).catch(() => {});
@@ -60,6 +70,7 @@ export default function LibraryAdminSettings() {
       });
       setAllocationMode(data.allocationMode || "FLEXIBLE_HOUR");
       setAttendanceMode(data.attendanceMode || "BOTH");
+      setRegistrationEnabled(data.registrationEnabled !== false);
     }).catch(() => toast.error("Failed to load library settings"));
 
     getMySubscriptionStatus().then(({ data }) => setSubscription(data)).catch(() => {});
@@ -77,10 +88,43 @@ export default function LibraryAdminSettings() {
     if (!selectedPlanId) return toast.error("Pick a plan first");
     setSubmittingRequest(true);
     try {
-      await requestPlanChange(selectedPlanId, requestNote);
-      toast.success("Plan change request sent to SuperAdmin for approval");
-      setUpgradeModalOpen(false);
-      refreshRequests();
+      const { data: order } = await initiatePlanUpgrade(selectedPlanId, requestNote);
+
+      if (!order.requiresPayment) {
+        // Free plan switch — goes to SuperAdmin for approval, same as before.
+        toast.success("Plan change request sent to SuperAdmin for approval");
+        setUpgradeModalOpen(false);
+        refreshRequests();
+        return;
+      }
+
+      // Paid plan — open Razorpay Checkout. On success, verify immediately applies the
+      // upgrade (no SuperAdmin wait). On cancel/failure, release the pending request.
+      try {
+        const result = await openRazorpayCheckout(order, {
+          name: library?.adminFullName,
+          email: library?.email,
+          contact: library?.adminPhone || library?.phone,
+        });
+        await verifyPlanUpgrade({
+          paymentRecordId: order.paymentRecordId,
+          razorpayOrderId: result.razorpay_order_id,
+          razorpayPaymentId: result.razorpay_payment_id,
+          razorpaySignature: result.razorpay_signature,
+        });
+        toast.success("Payment received! Your plan has been upgraded.");
+        setUpgradeModalOpen(false);
+        refreshRequests();
+        getMySubscriptionStatus().then(({ data }) => setSubscription(data)).catch(() => {});
+      } catch (checkoutErr) {
+        cancelPlanUpgrade(order.paymentRecordId).catch(() => {});
+        if (checkoutErr?.cancelled) {
+          toast.error("Payment was cancelled. You can request the upgrade again anytime.");
+        } else {
+          toast.error("Payment verification failed. Please try again.");
+        }
+        refreshRequests();
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || err.response?.data || "Failed to submit request");
     } finally {
@@ -127,12 +171,39 @@ export default function LibraryAdminSettings() {
     }
   };
 
+  const handleToggleRegistration = async (next) => {
+    setSavingRegistration(true);
+    try {
+      await updateLibrarySettings({ allocationMode, attendanceMode, registrationEnabled: next });
+      setRegistrationEnabled(next);
+      toast.success(next ? "Self registration enabled" : "Self registration disabled");
+      if (next) {
+        const fresh = await checkStepJustCompleted("SELF_REGISTRATION");
+        if (fresh) {
+          setSuccessData({
+            justCompletedLabel: "Self Registration",
+            next: fresh.recommendedNextStep,
+            allCompleted: fresh.allCompleted,
+          });
+        }
+      }
+    } catch {
+      toast.error("Failed to update self registration");
+    } finally {
+      setSavingRegistration(false);
+    }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
         <h2 className="font-display text-xl text-ink-50">Library Settings</h2>
         <p className="text-sm text-ink-400 mt-0.5">Manage your library details and configuration</p>
       </div>
+
+      <PageHelpNote>
+        Configure your library profile, self registration, attendance mode and seat allocation mode here. Changes apply immediately.
+      </PageHelpNote>
 
       {/* Subscription & Plan */}
       {subscription && (
@@ -248,6 +319,47 @@ export default function LibraryAdminSettings() {
           </div>
           <div className="sm:col-span-2">
             <Button onClick={handleSaveInfo} loading={saving}><Save size={14} /> Save Details</Button>
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Self Registration */}
+      <Card>
+        <CardHeader className="flex items-center gap-2">
+          <Layers size={16} className="text-amber-400" />
+          <CardTitle>Self Registration</CardTitle>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-ink-400">
+            Allow students to register themselves using your registration page and automatically join your library.
+            You can enable or disable this anytime.
+          </p>
+          <div className="flex items-center justify-between rounded-xl border border-ink-700 p-4">
+            <div>
+              <p className="text-sm font-medium text-ink-100">
+                {registrationEnabled ? "Self registration is ON" : "Self registration is OFF"}
+              </p>
+              <p className="text-xs text-ink-500 mt-0.5">
+                {registrationEnabled
+                  ? "Students can join via your registration link / QR code."
+                  : "Only admin-added students can join right now."}
+              </p>
+            </div>
+            <button
+              onClick={() => handleToggleRegistration(!registrationEnabled)}
+              disabled={savingRegistration}
+              className={clsx(
+                "relative h-7 w-12 rounded-full transition-colors shrink-0",
+                registrationEnabled ? "bg-amber-400" : "bg-ink-700"
+              )}
+            >
+              <span
+                className={clsx(
+                  "absolute top-1 h-5 w-5 rounded-full bg-white transition-transform shadow-sm",
+                  registrationEnabled ? "translate-x-6" : "translate-x-1"
+                )}
+              />
+            </button>
           </div>
         </CardBody>
       </Card>
@@ -385,20 +497,20 @@ export default function LibraryAdminSettings() {
       <Modal
         open={upgradeModalOpen}
         onClose={() => setUpgradeModalOpen(false)}
-        title="Request a plan change"
+        title="Upgrade or change plan"
         footer={
           <>
             <Button variant="secondary" onClick={() => setUpgradeModalOpen(false)}>Cancel</Button>
             <Button onClick={submitPlanRequest} loading={submittingRequest} disabled={!selectedPlanId}>
-              Send request
+              {selectedPlanPrice > 0 ? "Pay & upgrade" : "Send request"}
             </Button>
           </>
         }
       >
         <div className="space-y-3">
           <p className="text-sm text-ink-400">
-            Pick the plan you'd like to switch to. Your request goes to SuperAdmin for approval —
-            the change only takes effect once approved.
+            Pick the plan you'd like to switch to. Paid plans open secure payment (Razorpay) —
+            your plan upgrades the instant payment succeeds. Free plans are sent to SuperAdmin for approval.
           </p>
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {planCatalog.length === 0 && <p className="text-sm text-ink-500">Loading plans...</p>}
@@ -417,7 +529,7 @@ export default function LibraryAdminSettings() {
                   <p className="font-medium text-ink-100">
                     {p.planName} {subscription?.planName === p.planName && <span className="text-xs text-ink-500">(current plan)</span>}
                   </p>
-                  <span className="text-amber-300 font-medium">₹{p.planPrice}</span>
+                  <span className="text-amber-300 font-medium">{p.planPrice > 0 ? `₹${p.planPrice}` : "Free"}</span>
                 </div>
                 <p className="text-xs text-ink-500 mt-1">
                   {p.noOfStudent} students + {p.bufferStudent ?? 0} grace · {p.noOfDays} day cycle
@@ -462,6 +574,8 @@ export default function LibraryAdminSettings() {
           </div>
         )}
       </Modal>
+
+      <OnboardingSuccessModal data={successData} onClose={() => setSuccessData(null)} />
     </div>
   );
 }

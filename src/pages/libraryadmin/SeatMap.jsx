@@ -8,6 +8,9 @@ import { EmptyState } from "../../components/ui/Feedback";
 import SeatCard from "../../components/seat/SeatCard";
 import SeatActionModal from "./SeatActionModal";
 import { getAllSeats, createSeat, updateSeat } from "../../api/seatApi";
+import { useOnboarding } from "../../context/OnboardingContext";
+import OnboardingSuccessModal from "../../components/onboarding/OnboardingSuccessModal";
+import PageHelpNote from "../../components/onboarding/PageHelpNote";
 
 const STATUS_FILTERS = [
   { value: "ALL", label: "All seats" },
@@ -41,6 +44,8 @@ export default function SeatMap() {
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { checkStepJustCompleted } = useOnboarding();
+  const [successData, setSuccessData] = useState(null);
 
   // Add seat form state
   const [step, setStep] = useState(1); // 1: location, 2: count, 3: preview
@@ -120,6 +125,14 @@ export default function SeatMap() {
       setAddOpen(false);
       resetAddForm();
       fetchSeats();
+      const fresh = await checkStepJustCompleted("SEATS");
+      if (fresh) {
+        setSuccessData({
+          justCompletedLabel: "Seats",
+          next: fresh.recommendedNextStep,
+          allCompleted: fresh.allCompleted,
+        });
+      }
     } catch {
       toast.error("Failed to add seats");
     } finally {
@@ -188,6 +201,10 @@ export default function SeatMap() {
         </Button>
       </div>
 
+      <PageHelpNote>
+        Seats represent physical seating locations inside your library. Students are assigned to a seat once they join a plan.
+      </PageHelpNote>
+
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-1.5 text-xs">
           <span className="h-2.5 w-2.5 rounded-full bg-success" /> Available <span className="text-ink-500">({counts.AVAILABLE})</span>
@@ -215,7 +232,7 @@ export default function SeatMap() {
           {Array.from({ length: 16 }).map((_, i) => <div key={i} className="aspect-square rounded-xl bg-ink-800 animate-pulse" />)}
         </div>
       ) : Object.keys(grouped).length === 0 ? (
-        <EmptyState icon={<Armchair size={26} />} title="No seats found" description="Add your first seat to start building the floor layout." actionLabel="Add seats" onAction={() => { resetAddForm(); setAddOpen(true); }} />
+        <EmptyState icon={<Armchair size={26} />} title="No Seats Created" description="Create seating positions for your students. You'll be able to preview and rename each seat before confirming." actionLabel="Create Seats" onAction={() => { resetAddForm(); setAddOpen(true); }} />
       ) : (
         <div className="space-y-7">
           {Object.entries(grouped).map(([location, seatList]) => (
@@ -380,6 +397,8 @@ export default function SeatMap() {
           </div>
         )}
       </Modal>
+
+      <OnboardingSuccessModal data={successData} onClose={() => setSuccessData(null)} />
     </div>
   );
 }

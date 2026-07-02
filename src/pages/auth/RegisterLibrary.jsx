@@ -5,7 +5,8 @@ import toast from "react-hot-toast";
 import AuthLayout from "./AuthLayout";
 import { Input, Label, Select } from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
-import { registerLibrary, getPublicPlans } from "../../api/publicApi";
+import { initiateLibrarySignup, verifyLibrarySignup, cancelLibrarySignup, getPublicPlans } from "../../api/publicApi";
+import { openRazorpayCheckout } from "../../utils/razorpay";
 
 const initialForm = {
   name: "",
@@ -60,11 +61,43 @@ export default function RegisterLibrary() {
         // on a 7-day free TRIAL by the backend regardless of what's sent here.
         libraryPlanId: form.libraryPlanId ? Number(form.libraryPlanId) : null,
       };
-      await registerLibrary(payload);
-      setDone(true);
-      toast.success("Library registered! Your 7-day free trial has started — log in to get started.");
+
+      const { data: order } = await initiateLibrarySignup(payload);
+
+      if (!order.requiresPayment) {
+        // Free / order-1 plan — library is already created, nothing more to do.
+        setDone(true);
+        toast.success("Library registered! Your 7-day free trial has started — log in to get started.");
+        return;
+      }
+
+      // Paid plan — open Razorpay Checkout, then verify on success to actually create the library.
+      try {
+        const result = await openRazorpayCheckout(order, {
+          name: form.adminFullName,
+          email: form.email,
+          contact: form.phone,
+        });
+        await verifyLibrarySignup({
+          paymentRecordId: order.paymentRecordId,
+          razorpayOrderId: result.razorpay_order_id,
+          razorpayPaymentId: result.razorpay_payment_id,
+          razorpaySignature: result.razorpay_signature,
+        });
+        setDone(true);
+        toast.success("Payment received! Your library is registered — log in to get started.");
+      } catch (checkoutErr) {
+        // Either the user closed the popup, or payment failed. Either way, release the
+        // staged signup so they can try again cleanly.
+        cancelLibrarySignup(order.paymentRecordId).catch(() => {});
+        if (checkoutErr?.cancelled) {
+          toast.error("Payment was cancelled. You can try again whenever you're ready.");
+        } else {
+          toast.error("Payment verification failed. Please try again.");
+        }
+      }
     } catch (err) {
-      toast.error(err.response?.data || err.response?.data?.message || "Registration failed");
+      toast.error(err.response?.data?.message || err.response?.data || "Registration failed");
     } finally {
       setSubmitting(false);
     }
@@ -135,6 +168,9 @@ export default function RegisterLibrary() {
                 </option>
               ))}
             </Select>
+            <p className="text-xs text-ink-500 mt-1">
+              Free/starter plan registers instantly. Any paid plan opens secure payment (Razorpay) before your library is created.
+            </p>
           </div>
         )}
 

@@ -6,6 +6,9 @@ import { Input, Label, Textarea } from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import { getAdminPaymentSettings, saveAdminPaymentSettings } from "../../api/paymentApi";
+import { useOnboarding } from "../../context/OnboardingContext";
+import OnboardingSuccessModal from "../../components/onboarding/OnboardingSuccessModal";
+import PageHelpNote from "../../components/onboarding/PageHelpNote";
 
 export default function PaymentSettings() {
   const [loading, setLoading] = useState(true);
@@ -18,6 +21,8 @@ export default function PaymentSettings() {
   const [description, setDescription] = useState("");
   const [updatedAt, setUpdatedAt] = useState(null);
   const fileInputRef = useRef(null);
+  const { checkStepJustCompleted } = useOnboarding();
+  const [successData, setSuccessData] = useState(null);
 
   const fetchSettings = () => {
     setLoading(true);
@@ -54,6 +59,14 @@ export default function PaymentSettings() {
       setQrFile(null);
       setQrPreview(null);
       toast.success("Payment details saved — students can now see this on their Deposit page");
+      const fresh = await checkStepJustCompleted("PAYMENT");
+      if (fresh) {
+        setSuccessData({
+          justCompletedLabel: "Payment settings",
+          next: fresh.recommendedNextStep,
+          allCompleted: fresh.allCompleted,
+        });
+      }
     } catch (err) {
       toast.error(err?.response?.data || "Failed to save payment details");
     } finally {
@@ -71,6 +84,10 @@ export default function PaymentSettings() {
           Set up your deposit QR code, UPI ID, and phone number — students will see these on their Deposit page when paying fees.
         </p>
       </div>
+
+      <PageHelpNote>
+        Configure payment methods used by your library so students can pay fees and your records stay organized automatically.
+      </PageHelpNote>
 
       <Card>
         <CardHeader className="flex items-center gap-2">
@@ -179,6 +196,8 @@ export default function PaymentSettings() {
           <Save size={14} /> Save payment details
         </Button>
       </div>
+
+      <OnboardingSuccessModal data={successData} onClose={() => setSuccessData(null)} />
     </div>
   );
 }

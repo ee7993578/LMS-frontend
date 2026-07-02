@@ -9,6 +9,15 @@ export const updateStudent = (id, payload) => api.put(`/api/libraryadmin/student
 export const deleteStudent = (id) => api.delete(`/api/libraryadmin/student/${id}`);
 export const getAllStudents = () => api.get("/api/libraryadmin/students");
 
+// ---- Student subscription (plan cycle) change/history ----
+// StudentSubscriptionDTO: { id, studentId, planId, planName, cycleStart, cycleEnd,
+//   planDurationDays, planPrice, payable, paid, balance, carryForwardCredit, status,
+//   displayStatus, changeType, previousSubscriptionId, daysRemaining, createdAt, createdBy }
+export const changeStudentSubscription = (studentId, newPlanId, mode) =>
+  api.post(`/api/libraryadmin/student/${studentId}/subscription/change`, { newPlanId, mode });
+export const getStudentSubscriptionHistory = (studentId) =>
+  api.get(`/api/libraryadmin/student/${studentId}/subscription/history`);
+
 // ---- Subscription / trial / plan-usage status (drives banners + grace dashboard) ----
 // LibraryUsageDTO: { libraryId, libraryName, planName, planLimit, graceLimit, currentStudentCount,
 //                     inGracePeriod, graceDaysRemaining, graceExceeded, status, daysRemainingInCurrentPhase }
@@ -23,6 +32,21 @@ export const getPlanCatalog = () => api.get("/api/libraryadmin/plan/catalog");
 export const requestPlanChange = (requestedPlanId, note) =>
   api.post("/api/libraryadmin/plan-requests", { requestedPlanId, note });
 export const getMyPlanRequests = () => api.get("/api/libraryadmin/plan-requests");
+
+// ---- Plan upgrade payment (Razorpay) ----
+// If requestedPlan is free, behaves like requestPlanChange above (still goes to SuperAdmin) and
+// returns { requiresPayment: false, result: <PlanUpgradeRequestDTO> }.
+// If requestedPlan is paid, returns
+// { requiresPayment: true, razorpayOrderId, keyId, amountPaise, currency, paymentRecordId, planName, result }
+// — the plan switch is only applied once /plan-requests/verify confirms payment (no SuperAdmin wait).
+export const initiatePlanUpgrade = (requestedPlanId, note) =>
+  api.post("/api/libraryadmin/plan-requests/initiate", { requestedPlanId, note });
+
+export const verifyPlanUpgrade = ({ paymentRecordId, razorpayOrderId, razorpayPaymentId, razorpaySignature }) =>
+  api.post("/api/libraryadmin/plan-requests/verify", { paymentRecordId, razorpayOrderId, razorpayPaymentId, razorpaySignature });
+
+export const cancelPlanUpgrade = (paymentRecordId) =>
+  api.post("/api/libraryadmin/plan-requests/cancel", { paymentRecordId });
 
 // ---- Plans (per-library hourly/monthly/custom plans) ----
 // PlanDTO: { id, name, duration, price, library, libraryId }

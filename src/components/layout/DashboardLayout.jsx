@@ -7,6 +7,8 @@ import { LIBRARY_ADMIN_NAV } from "./navConfig";
 import { getMyLibrary } from "../../api/librarySettingsApi";
 import { getMonthAttendance } from "../../api/attendanceApi";
 import StatusBanner from "./StatusBanner";
+import WelcomeModal from "../onboarding/WelcomeModal";
+import FloatingHelpButton from "../onboarding/FloatingHelpButton";
 
 /*
   Desktop Tab Bar — Library Admin only, hidden on mobile (lg:flex)
@@ -144,6 +146,9 @@ export default function DashboardLayout({ navItems, role, title }) {
           <Outlet />
         </main>
       </div>
+
+      {isLibraryAdmin && <WelcomeModal libraryName={libraryName} />}
+      {isLibraryAdmin && <FloatingHelpButton />}
     </div>
   );
 }
